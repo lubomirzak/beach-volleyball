@@ -1,0 +1,17 @@
+.sidebar {
+  border-right: 1px solid var(--mat-sys-outline-variant);
+  padding: 16px 8px;
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.main-content {
+  padding: 15px;
+}
+
+.top-header {
+  padding: 15px;
+  color: var(--mat-sys-primary);
+  background: var(--mat-sys-primary-container);
+}

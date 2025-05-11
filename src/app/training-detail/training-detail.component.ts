@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core'
 import { CommonModule } from '@angular/common'
-import { KeyValuePipe, NgIf } from '@angular/common'
+import { NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
 import { MatSelectModule } from '@angular/material/select'
 import { MatInputModule } from '@angular/material/input'
@@ -31,7 +31,6 @@ import { Training } from 'src/interfaces/training'
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    KeyValuePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,

@@ -9,18 +9,25 @@ import {
 } from '@angular/fire/firestore'
 import { Player } from 'src/interfaces/player'
 import { Attending } from 'src/interfaces/attending'
+import { CacheService } from './cache.service'
 
 @Injectable({
   providedIn: 'root',
 })
 export class PlayerService {
   firestore: Firestore = inject(Firestore)
+  cacheService = inject(CacheService)
 
-  getData = async (): Promise<Player[]> => {
+  get = async (): Promise<Player[]> => {
     let result: Player[] = []
 
-    const querySnapshot = await getDocs(collection(this.firestore, 'players'))
-    querySnapshot.forEach((doc) => {
+    let playersFromCache = this.cacheService.get('players')
+    if (playersFromCache.length != 0) {
+      return playersFromCache
+    }
+
+    const snapshot = await getDocs(collection(this.firestore, 'players'))
+    snapshot.forEach((doc) => {
       let item = doc.data()
       let player: Player = {
         id: item['id'],
@@ -32,10 +39,12 @@ export class PlayerService {
       result.push(player)
     })
 
-    return result
+    return result.sort((a, b) =>
+      a.attending.toString().localeCompare(b.attending.toString())
+    )
   }
 
-  createNewPlayer = async (
+  create = async (
     firstName: string,
     lastName: string,
     attending: Attending

@@ -15,3 +15,12 @@
   color: var(--mat-sys-primary);
   background: var(--mat-sys-primary-container);
 }
+
+.common-main-styles {
+  background-color: var(--mat-sys-background);
+  min-height: 1000px;
+  font-family: var(
+    --mat-table-header-headline-font,
+    var(--mat-sys-title-small-font, Roboto, sans-serif)
+  );
+}

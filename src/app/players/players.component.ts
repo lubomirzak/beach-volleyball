@@ -33,19 +33,18 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
     </div>
 
     <div *ngIf="!showSpinner">
+      <h1>Players</h1>
       <table mat-table [dataSource]="playersData$">
         <ng-container matColumnDef="firstName">
           <th mat-header-cell *matHeaderCellDef>Firstname</th>
           <td mat-cell *matCellDef="let element">{{ element.firstName }}</td>
         </ng-container>
 
-        <!-- Name Column -->
         <ng-container matColumnDef="lastName">
           <th mat-header-cell *matHeaderCellDef>Lastname</th>
           <td mat-cell *matCellDef="let element">{{ element.lastName }}</td>
         </ng-container>
 
-        <!-- Weight Column -->
         <ng-container matColumnDef="attending">
           <th mat-header-cell *matHeaderCellDef>Attending</th>
           <td mat-cell *matCellDef="let element">{{ element.attending }}</td>
@@ -56,6 +55,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
       </table>
 
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
+
+      <h3>Add player</h3>
 
       <form novalidate [formGroup]="applyForm">
         <div class="row">
@@ -131,11 +132,10 @@ export class PlayersComponent {
   }
 
   submitNewPlayer = async () => {
-    console.log(this.applyForm.value)
     let attendingInt = this.applyForm.value.attending ?? '3'
     let attending: Attending = Attending[attendingInt as keyof typeof Attending]
 
-    let res = await this.playerService.createNewPlayer(
+    let res = await this.playerService.create(
       this.applyForm.value.firstName ?? '',
       this.applyForm.value.lastName ?? '',
       attending
@@ -149,7 +149,7 @@ export class PlayersComponent {
   }
 
   reloadData = () => {
-    this.playerService.getData().then((data) => {
+    this.playerService.get().then((data) => {
       this.playersData$ = data
       this.showSpinner = false
     })

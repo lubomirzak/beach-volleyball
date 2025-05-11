@@ -9,7 +9,7 @@ import routeConfig from './routes'
   selector: 'app-root',
   imports: [RouterModule, MatSidenavModule, MatNavList, MatListModule, MatButtonModule],
   template: `
-    <main style="background-color: var(--mat-sys-inverse-primary);">
+    <main class="common-main-styles">
       <div class="top-header">
         <a [routerLink]="['/']">
           <button mat-raised-button>Beach volley</button>
@@ -17,9 +17,10 @@ import routeConfig from './routes'
       </div>
 
       <section>
-        <mat-sidenav-container>
+        <mat-sidenav-container style="min-height: 1000px">
           <mat-sidenav mode="side" opened>
             <mat-nav-list class="sidebar">
+              <a mat-list-item [routerLink]="['/trainings']">Trainings</a>
               <a mat-list-item [routerLink]="['/players']">Players</a>
             </mat-nav-list>
           </mat-sidenav>

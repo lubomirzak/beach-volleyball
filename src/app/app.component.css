@@ -6,6 +6,22 @@
   box-sizing: border-box;
 }
 
+.logo {
+  display: inline-block;
+  padding-left: 10px;
+  color: var(--mat-sys-primary);
+  filter: invert(81%) sepia(51%) saturate(4245%) hue-rotate(128deg) brightness(96%) contrast(101%);
+}
+
+.logo-text {
+  display: inline-block;
+  padding-left: 20px;
+  color: var(--mat-sys-primary);
+  font-size: 35px;
+  vertical-align: bottom;
+  height: 55px;
+}
+
 .main-content {
   padding: 15px;
 }

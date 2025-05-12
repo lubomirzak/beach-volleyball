@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core'
+import { Component } from '@angular/core'
 import { KeyValuePipe, NgIf } from '@angular/common'
 import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
@@ -13,7 +13,7 @@ import { MatButtonModule } from '@angular/material/button'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { provideNativeDateAdapter } from '@angular/material/core'
-import {RouterModule} from '@angular/router';
+import { RouterModule } from '@angular/router'
 
 @Component({
   selector: 'app-trainings',
@@ -29,7 +29,7 @@ import {RouterModule} from '@angular/router';
     MatProgressSpinnerModule,
     MatDatepickerModule,
     NgIf,
-    RouterModule
+    RouterModule,
   ],
   template: `
     <h1>Trainings</h1>
@@ -42,7 +42,11 @@ import {RouterModule} from '@angular/router';
         <ng-container matColumnDef="date">
           <th mat-header-cell *matHeaderCellDef>Date</th>
           <td mat-cell *matCellDef="let element">
-             <a [routerLink]="['/trainingdetail', element.id]" style="color: var(--mat-sys-primary)">{{ element.date.toDateString() }}</a>
+            <a
+              [routerLink]="['/trainingdetail', element.id]"
+              style="color: var(--mat-sys-primary)"
+              >{{ element.date.toDateString() }}</a
+            >
           </td>
         </ng-container>
 
@@ -88,8 +92,6 @@ import {RouterModule} from '@angular/router';
   providers: [provideNativeDateAdapter()],
 })
 export class TrainingsComponent {
-  snackBar = inject(MatSnackBar)
-  trainingService = inject(TrainingService)
   trainingsData$: any[] = []
   columnNames: any[] = ['date', 'type']
   showSpinner: boolean = true
@@ -99,7 +101,10 @@ export class TrainingsComponent {
     type: new FormControl(''),
   })
 
-  constructor() {
+  constructor(
+    private trainingService: TrainingService,
+    private snackBar: MatSnackBar
+  ) {
     this.reloadData()
   }
 

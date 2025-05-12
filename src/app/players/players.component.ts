@@ -109,8 +109,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
   }`,
 })
 export class PlayersComponent {
-  snackBar = inject(MatSnackBar)
-  playerService = inject(PlayerService)
   playersData$: Player[] = []
   columnNames: any[] = ['firstName', 'lastName', 'attending']
   showSpinner: boolean = true
@@ -121,7 +119,10 @@ export class PlayersComponent {
     attending: new FormControl(''),
   })
 
-  constructor() {
+  constructor(
+    private snackBar: MatSnackBar,
+    private playerService: PlayerService
+  ) {
     this.reloadData()
   }
 

@@ -12,7 +12,12 @@ import routeConfig from './routes'
     <main class="common-main-styles">
       <div class="top-header">
         <a [routerLink]="['/']">
-          <button mat-raised-button>Beach volley</button>
+          <div class="logo">
+             <img src="assets/beach-logo.svg" style="height: 75px; width: 75px;"/>
+          </div>
+          <div class="logo-text">
+             Beach volley stats
+          </div>
         </a>
       </div>
 

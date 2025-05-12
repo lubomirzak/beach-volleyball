@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core'
+import { Injectable } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -15,14 +15,17 @@ import { CacheService } from './cache.service'
   providedIn: 'root',
 })
 export class PlayerService {
-  firestore: Firestore = inject(Firestore)
-  cacheService = inject(CacheService)
+  constructor(
+    private firestore: Firestore,
+    private cacheService: CacheService
+  ) {}
 
   get = async (): Promise<Player[]> => {
     let result: Player[] = []
 
     let playersFromCache = this.cacheService.get('players')
     if (playersFromCache.length != 0) {
+      console.log('Returning players from cache')
       return playersFromCache
     }
 

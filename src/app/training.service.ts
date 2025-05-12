@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core'
+import { Injectable } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -21,9 +21,11 @@ import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScorebo
   providedIn: 'root',
 })
 export class TrainingService {
-  firestore: Firestore = inject(Firestore)
-  matchService = inject(MatchService)
-  playerService = inject(PlayerService)
+  constructor(
+    private firestore: Firestore,
+    private matchService: MatchService,
+    private playerService: PlayerService
+  ) {}
 
   get = async (): Promise<Training[]> => {
     let result: Training[] = []
@@ -90,7 +92,7 @@ export class TrainingService {
         team1Points: x.team1Points,
         team2Points: x.team2Points,
         trainingId: x.trainingId,
-        created: x.created
+        created: x.created,
       }
 
       return trainingDetailMatch
@@ -100,28 +102,24 @@ export class TrainingService {
 
     trainingDetailMatches.forEach((item) => {
       let team1won = item.team1Points > item.team2Points
-      let player11 = players.filter(
-        (x) => x.id == item.team1Player1
-      )[0]
+      let player11 = players.filter((x) => x.id == item.team1Player1)[0]
 
       trainingDetailScoreboards = this.processMatch(
         trainingDetailScoreboards,
         player11.id,
-       `${player11.firstName} ${player11.lastName}`,
+        `${player11.firstName} ${player11.lastName}`,
         team1won ? item.team1Points : item.team2Points,
         team1won ? item.team2Points : item.team1Points,
         team1won ? 1 : 0,
         team1won ? 0 : 1
       )
 
-      let player12 = players.filter(
-        (x) => x.id == item.team1Player2
-      )[0]
+      let player12 = players.filter((x) => x.id == item.team1Player2)[0]
 
       trainingDetailScoreboards = this.processMatch(
         trainingDetailScoreboards,
         player12.id,
-       `${player12.firstName} ${player12.lastName}`,
+        `${player12.firstName} ${player12.lastName}`,
         team1won ? item.team1Points : item.team2Points,
         team1won ? item.team2Points : item.team1Points,
         team1won ? 1 : 0,
@@ -129,9 +127,7 @@ export class TrainingService {
       )
 
       let team2won = !team1won
-      let player21 = players.filter(
-        (x) => x.id == item.team2Player1
-      )[0]
+      let player21 = players.filter((x) => x.id == item.team2Player1)[0]
 
       trainingDetailScoreboards = this.processMatch(
         trainingDetailScoreboards,
@@ -143,14 +139,12 @@ export class TrainingService {
         team2won ? 0 : 1
       )
 
-      let player22 = players.filter(
-        (x) => x.id == item.team2Player2
-      )[0]
+      let player22 = players.filter((x) => x.id == item.team2Player2)[0]
 
       trainingDetailScoreboards = this.processMatch(
         trainingDetailScoreboards,
         player22.id,
-       `${player22.firstName} ${player22.lastName}`,
+        `${player22.firstName} ${player22.lastName}`,
         team2won ? item.team1Points : item.team2Points,
         team2won ? item.team2Points : item.team1Points,
         team2won ? 1 : 0,
@@ -162,7 +156,9 @@ export class TrainingService {
       date: training.date,
       id: trainingId,
       matches: trainingDetailMatches.sort((a, b) => a.created - b.created),
-      scoreboards: trainingDetailScoreboards.sort((a, b) =>  b.wonSets - a.wonSets),
+      scoreboards: trainingDetailScoreboards.sort(
+        (a, b) => b.wonSets - a.wonSets
+      ),
       type: training.type,
     }
   }

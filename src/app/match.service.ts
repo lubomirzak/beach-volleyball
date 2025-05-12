@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core'
+import { Injectable } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -15,8 +15,7 @@ import { Match } from 'src/interfaces/match'
   providedIn: 'root',
 })
 export class MatchService {
-  firestore: Firestore = inject(Firestore)
-
+  constructor(private firestore: Firestore) {}
   getMatchesForTraining = async (trainingId: string): Promise<Match[]> => {
     let result: Match[] = []
 
@@ -35,7 +34,7 @@ export class MatchService {
         team2Player2: item['team2Player2'],
         team1Points: item['team1Points'],
         team2Points: item['team2Points'],
-        created: item['created']
+        created: item['created'],
       }
 
       result.push(match)
@@ -53,7 +52,6 @@ export class MatchService {
     team1Points: number,
     team2Points: number
   ): Promise<void | DocumentReference<DocumentData>> => {
-
     const match: Match = {
       id: this.generateGUID(),
       trainingId: trainingId,
@@ -63,7 +61,7 @@ export class MatchService {
       team2Player2: team2Player2,
       team1Points: team1Points,
       team2Points: team2Points,
-      created: Date.now()
+      created: Date.now(),
     }
 
     try {

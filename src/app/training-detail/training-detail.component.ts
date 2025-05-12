@@ -75,7 +75,7 @@ import { Training } from 'src/interfaces/training'
         </table>
       </div>
 
-      <h3 >Matches</h3>
+      <h3>Matches</h3>
       <table mat-table [dataSource]="matches$">
         <ng-container matColumnDef="team1">
           <th mat-header-cell *matHeaderCellDef>Team 1</th>
@@ -95,8 +95,6 @@ import { Training } from 'src/interfaces/training'
         <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
-
-
 
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
@@ -192,11 +190,6 @@ import { Training } from 'src/interfaces/training'
   `,
 })
 export class TrainingDetailComponent {
-  route: ActivatedRoute = inject(ActivatedRoute)
-  snackBar = inject(MatSnackBar)
-  trainingService = inject(TrainingService)
-  matchService = inject(MatchService)
-  playerService = inject(PlayerService)
   trainingId: string
   matches$: any[] = []
   scoreboards$: any[] = []
@@ -206,6 +199,17 @@ export class TrainingDetailComponent {
   scoreboardColumnNames: any[] = ['name', 'sets', 'points']
   showSpinner: boolean = true
   attendingOptions: string[] = []
+
+  constructor(
+    private trainingService: TrainingService,
+    private matchService: MatchService,
+    private playerService: PlayerService,
+    private snackBar: MatSnackBar,
+    private route: ActivatedRoute
+  ) {
+    this.trainingId = this.route.snapshot.params['id']
+    this.reloadData()
+  }
 
   readonly team1Player1 = new FormControl('auto' as FloatLabelType)
   readonly team1Player2 = new FormControl('auto' as FloatLabelType)
@@ -247,11 +251,6 @@ export class TrainingDetailComponent {
     this.team2Points.valueChanges.pipe(map((v) => v || 'auto')),
     { initialValue: 'auto' }
   )
-
-  constructor() {
-    this.trainingId = this.route.snapshot.params['id']
-    this.reloadData()
-  }
 
   create = async () => {
     let res = await this.matchService.create(

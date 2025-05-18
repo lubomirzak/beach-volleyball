@@ -70,6 +70,11 @@ import { Training } from 'src/interfaces/training'
             <td mat-cell *matCellDef="let element">{{ element.points }}</td>
           </ng-container>
 
+        <ng-container matColumnDef="ratio">
+          <th mat-header-cell *matHeaderCellDef>Ratio</th>
+          <td mat-cell *matCellDef="let element">{{ element.ratio }}</td>
+        </ng-container>
+
           <tr mat-header-row *matHeaderRowDef="scoreboardColumnNames"></tr>
           <tr mat-row *matRowDef="let row; columns: scoreboardColumnNames"></tr>
         </table>
@@ -196,7 +201,7 @@ export class TrainingDetailComponent {
   playersData$: any[] = []
   trainingData$?: Training = undefined
   columnNames: any[] = ['team1', 'team2', 'score']
-  scoreboardColumnNames: any[] = ['name', 'sets', 'points']
+  scoreboardColumnNames: any[] = ['name', 'sets', 'points', 'ratio']
   showSpinner: boolean = true
   attendingOptions: string[] = []
 

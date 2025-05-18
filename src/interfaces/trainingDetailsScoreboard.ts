@@ -6,5 +6,6 @@ export interface TrainingDetailsScoreboard {
   wonPoints: number,
   lostPoints: number,
   sets: string,
-  points: string
+  points: string,
+  ratio: string
 }

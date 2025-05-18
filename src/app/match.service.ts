@@ -43,6 +43,34 @@ export class MatchService {
     return result
   }
 
+  getAllMatches = async (): Promise<Match[]> => {
+    let result: Match[] = []
+
+    let matchesRef = collection(this.firestore, 'matches')
+    let queryRef = query(matchesRef)
+
+    const snapshot = await getDocs(queryRef)
+    snapshot.forEach((doc) => {
+      let item = doc.data()
+
+      let match: Match = {
+        id: item['id'],
+        trainingId: 'UNKNOWN',
+        team1Player1: item['team1Player1'],
+        team1Player2: item['team1Player2'],
+        team2Player1: item['team2Player1'],
+        team2Player2: item['team2Player2'],
+        team1Points: item['team1Points'],
+        team2Points: item['team2Points'],
+        created: item['created'],
+      }
+
+      result.push(match)
+    })
+
+    return result
+  }
+
   create = async (
     trainingId: string,
     team1Player1: string,

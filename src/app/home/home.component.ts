@@ -1,43 +1,53 @@
-import {Component, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {HousingLocationComponent} from '../housing-location/housing-location.component';
-import {HousingLocation} from '../housinglocation';
-import {HousingService} from '../housing.service';
+import { Component, inject } from '@angular/core'
+import { CommonModule } from '@angular/common'
+import { MatTableModule } from '@angular/material/table'
+import { TrainingService } from '../training.service'
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, HousingLocationComponent],
+  imports: [CommonModule, MatTableModule],
   template: `
-    <section>
-      <form>
-        <input type="text" placeholder="Filter by city" #filter />
-        <button class="primary" type="button" (click)="filterResults(filter.value)">Search</button>
-      </form>
-    </section>
-    <section class="results">
-      <app-housing-location
-        *ngFor="let housingLocation of filteredLocationList"
-        [housingLocation]="housingLocation"
-      ></app-housing-location>
-    </section>
+    <h1 style="padding-top: 30px">Leaderboards</h1>
+
+    <div style="width: 30%; ">
+      <table mat-table [dataSource]="scoreboards$">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Player</th>
+          <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="sets">
+          <th mat-header-cell *matHeaderCellDef>Sets</th>
+          <td mat-cell *matCellDef="let element">{{ element.sets }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="points">
+          <th mat-header-cell *matHeaderCellDef>Points</th>
+          <td mat-cell *matCellDef="let element">{{ element.points }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="ratio">
+          <th mat-header-cell *matHeaderCellDef>Ratio</th>
+          <td mat-cell *matCellDef="let element">{{ element.ratio }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="scoreboardColumnNames"></tr>
+        <tr mat-row *matRowDef="let row; columns: scoreboardColumnNames"></tr>
+      </table>
+    </div>
   `,
   styleUrls: ['./home.component.css'],
 })
 export class HomeComponent {
-  housingLocationList: HousingLocation[] = [];
-  housingService: HousingService = inject(HousingService);
-  filteredLocationList: HousingLocation[] = [];
-  constructor() {
-    this.housingLocationList = this.housingService.getAllHousingLocations();
-    this.filteredLocationList = this.housingLocationList;
+  scoreboards$: any[] = []
+  scoreboardColumnNames: any[] = ['name', 'sets', 'points', 'ratio']
+  constructor(private trainingService: TrainingService) {
+    this.reloadData()
   }
-  filterResults(text: string) {
-    if (!text) {
-      this.filteredLocationList = this.housingLocationList;
-      return;
-    }
-    this.filteredLocationList = this.housingLocationList.filter((housingLocation) =>
-      housingLocation?.city.toLowerCase().includes(text.toLowerCase()),
-    );
+
+  reloadData = () => {
+    this.trainingService.getLeaderboard().then((data) => {
+      this.scoreboards$ = data
+    })
   }
 }

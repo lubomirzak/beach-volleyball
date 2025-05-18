@@ -16,6 +16,7 @@ import { PlayerService } from './player.service'
 import { TrainingDetails } from 'src/interfaces/trainingDetails'
 import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
+import { Player } from 'src/interfaces/player'
 
 @Injectable({
   providedIn: 'root',
@@ -44,7 +45,7 @@ export class TrainingService {
       result.push(training)
     })
 
-    return result
+    return result.sort((a, b) => b.date.getTime() - a.date.getTime())
   }
 
   getById = async (trainingId: string): Promise<Training> => {
@@ -98,6 +99,87 @@ export class TrainingService {
       return trainingDetailMatch
     })
 
+    var trainingDetailScoreboards = this.processTrainingDetailMatches(
+      trainingDetailMatches,
+      players
+    )
+
+    return {
+      date: training.date,
+      id: trainingId,
+      matches: trainingDetailMatches.sort((a, b) => a.created - b.created),
+      scoreboards: trainingDetailScoreboards.sort(
+        (a, b) => b.wonSets - a.wonSets
+      ),
+      type: training.type,
+    }
+  }
+
+  getLeaderboard = async (): Promise<TrainingDetailsScoreboard[]> => {
+    const players = await this.playerService.get()
+    const matches = await this.matchService.getAllMatches()
+
+    let trainingDetailMatches = matches.map((x) => {
+      let player11 = players.filter((y) => y.id == x.team1Player1)[0]
+      let player12 = players.filter((y) => y.id == x.team1Player2)[0]
+      let player21 = players.filter((y) => y.id == x.team2Player1)[0]
+      let player22 = players.filter((y) => y.id == x.team2Player2)[0]
+
+      let trainingDetailMatch: TrainingDetailsMatch = {
+        id: x.id,
+        team1: `${player11.firstName} ${player11.lastName}, ${player12.firstName} ${player12.lastName}`,
+        team2: `${player21.firstName} ${player21.lastName}, ${player22.firstName} ${player22.lastName}`,
+        score: `${x.team1Points}:${x.team2Points}`,
+        team1Player1: player11.id,
+        team1Player2: player12.id,
+        team2Player1: player21.id,
+        team2Player2: player22.id,
+        team1Points: x.team1Points,
+        team2Points: x.team2Points,
+        trainingId: x.trainingId,
+        created: x.created,
+      }
+
+      return trainingDetailMatch
+    })
+
+    var trainingDetailScoreboards = this.processTrainingDetailMatches(
+      trainingDetailMatches,
+      players
+    )
+
+    return trainingDetailScoreboards.sort((a, b) => parseFloat(b.ratio) - parseFloat(a.ratio))
+  }
+
+  create = async (
+    date: string,
+    type: Attending
+  ): Promise<void | DocumentReference<DocumentData>> => {
+    const timestamp = Date.parse(date)
+    const dateToBeSaved = new Date(timestamp)
+
+    const player: Training = {
+      id: this.generateGUID(),
+      type: type,
+      date: dateToBeSaved,
+    }
+
+    try {
+      const newMessageRef = await addDoc(
+        collection(this.firestore, 'trainings'),
+        player
+      )
+      return newMessageRef
+    } catch (error) {
+      console.error('Error writing new training to Firebase Database', error)
+      return
+    }
+  }
+
+  processTrainingDetailMatches = (
+    trainingDetailMatches: TrainingDetailsMatch[],
+    players: Player[]
+  ): TrainingDetailsScoreboard[] => {
     let trainingDetailScoreboards: TrainingDetailsScoreboard[] = []
 
     trainingDetailMatches.forEach((item) => {
@@ -152,40 +234,7 @@ export class TrainingService {
       )
     })
 
-    return {
-      date: training.date,
-      id: trainingId,
-      matches: trainingDetailMatches.sort((a, b) => a.created - b.created),
-      scoreboards: trainingDetailScoreboards.sort(
-        (a, b) => b.wonSets - a.wonSets
-      ),
-      type: training.type,
-    }
-  }
-
-  create = async (
-    date: string,
-    type: Attending
-  ): Promise<void | DocumentReference<DocumentData>> => {
-    const timestamp = Date.parse(date)
-    const dateToBeSaved = new Date(timestamp)
-
-    const player: Training = {
-      id: this.generateGUID(),
-      type: type,
-      date: dateToBeSaved,
-    }
-
-    try {
-      const newMessageRef = await addDoc(
-        collection(this.firestore, 'trainings'),
-        player
-      )
-      return newMessageRef
-    } catch (error) {
-      console.error('Error writing new training to Firebase Database', error)
-      return
-    }
+    return trainingDetailScoreboards
   }
 
   processMatch = (
@@ -207,6 +256,8 @@ export class TrainingService {
       scoreboardToUpdate.wonSets += wonSets
       scoreboardToUpdate.points = `${scoreboardToUpdate.wonPoints}:${scoreboardToUpdate.lostPoints}`
       scoreboardToUpdate.sets = `${scoreboardToUpdate.wonSets}:${scoreboardToUpdate.lostSets}`
+
+      scoreboardToUpdate.ratio = this.calculateRatio(scoreboardToUpdate.wonSets, scoreboardToUpdate.lostSets)
     } else {
       scoreboardToUpdate = {
         playerId: playerId,
@@ -217,6 +268,7 @@ export class TrainingService {
         sets: `${wonSets}:${lostSets}`,
         wonPoints: wonPoints,
         wonSets: wonSets,
+        ratio: this.calculateRatio(wonSets, lostSets)
       }
     }
 
@@ -224,6 +276,19 @@ export class TrainingService {
     result.push(scoreboardToUpdate)
 
     return result
+  }
+
+  calculateRatio(wonSets: number, lostSets: number): string {
+    let ratio = 0
+      if (wonSets == 0) {
+        ratio = 0
+      } else if (lostSets == 0) {
+        ratio = 1
+      } else {
+        ratio =  wonSets / (wonSets + lostSets)
+      }
+
+      return ratio.toFixed(2)
   }
 
   // Naive implementation, but it's enough

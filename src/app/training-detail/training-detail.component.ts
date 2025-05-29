@@ -292,7 +292,12 @@ export class TrainingDetailComponent {
 
   reloadData = () => {
     this.playerService.get().then((data) => {
-      this.playersData$ = data
+      this.playersData$ = data.sort((a, b) => {
+        var fullname1 = `${b.firstName} ${b.lastName}`;
+        var fullname2 = `${a.firstName} ${a.lastName}`;
+
+        return fullname2.localeCompare(fullname1);
+      });
     })
 
     this.trainingService.getById(this.trainingId).then((data) => {

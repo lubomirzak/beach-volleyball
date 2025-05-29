@@ -17,6 +17,7 @@ import { TrainingDetails } from 'src/interfaces/trainingDetails'
 import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
 import { Player } from 'src/interfaces/player'
+import * as CryptoJS from 'crypto-js'
 
 @Injectable({
   providedIn: 'root',
@@ -148,13 +149,28 @@ export class TrainingService {
       players
     )
 
-    return trainingDetailScoreboards.sort((a, b) => parseFloat(b.ratio) - parseFloat(a.ratio))
+    // let's not count people who only played one set
+    trainingDetailScoreboards = trainingDetailScoreboards.filter(x => x.wonSets > 1);
+
+    return trainingDetailScoreboards.sort(
+      (a, b) => parseFloat(b.ratio) - parseFloat(a.ratio)
+    )
   }
 
   create = async (
     date: string,
+    password: string,
     type: Attending
   ): Promise<void | DocumentReference<DocumentData>> => {
+    // verify password
+    if (
+      CryptoJS.SHA1(password).toString() !=
+      '738ad30aad6a9a3425ec587e641ef683e0a534d1'
+    ) {
+      console.log('Invalid password')
+      return
+    }
+
     const timestamp = Date.parse(date)
     const dateToBeSaved = new Date(timestamp)
 
@@ -257,7 +273,10 @@ export class TrainingService {
       scoreboardToUpdate.points = `${scoreboardToUpdate.wonPoints}:${scoreboardToUpdate.lostPoints}`
       scoreboardToUpdate.sets = `${scoreboardToUpdate.wonSets}:${scoreboardToUpdate.lostSets}`
 
-      scoreboardToUpdate.ratio = this.calculateRatio(scoreboardToUpdate.wonSets, scoreboardToUpdate.lostSets)
+      scoreboardToUpdate.ratio = this.calculateRatio(
+        scoreboardToUpdate.wonSets,
+        scoreboardToUpdate.lostSets
+      )
     } else {
       scoreboardToUpdate = {
         playerId: playerId,
@@ -268,7 +287,7 @@ export class TrainingService {
         sets: `${wonSets}:${lostSets}`,
         wonPoints: wonPoints,
         wonSets: wonSets,
-        ratio: this.calculateRatio(wonSets, lostSets)
+        ratio: this.calculateRatio(wonSets, lostSets),
       }
     }
 
@@ -280,15 +299,15 @@ export class TrainingService {
 
   calculateRatio(wonSets: number, lostSets: number): string {
     let ratio = 0
-      if (wonSets == 0) {
-        ratio = 0
-      } else if (lostSets == 0) {
-        ratio = 1
-      } else {
-        ratio =  wonSets / (wonSets + lostSets)
-      }
+    if (wonSets == 0) {
+      ratio = 0
+    } else if (lostSets == 0) {
+      ratio = 1
+    } else {
+      ratio = wonSets / (wonSets + lostSets)
+    }
 
-      return ratio.toFixed(2)
+    return ratio.toFixed(2)
   }
 
   // Naive implementation, but it's enough

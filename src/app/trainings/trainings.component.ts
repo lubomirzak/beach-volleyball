@@ -85,6 +85,17 @@ import { RouterModule } from '@angular/router'
             </mat-form-field>
           </div>
         </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline">
+              <input
+                matInput
+                placeholder="Password"
+                formControlName="password"
+              />
+            </mat-form-field>
+          </div>
+        </div>
         <button type="submit" mat-flat-button (click)="create()">Create</button>
       </form>
     </div>
@@ -99,6 +110,7 @@ export class TrainingsComponent {
   applyForm = new FormGroup({
     date: new FormControl(''),
     type: new FormControl(''),
+    password: new FormControl(''),
   })
 
   constructor(
@@ -120,6 +132,7 @@ export class TrainingsComponent {
 
     let res = await this.trainingService.create(
       this.applyForm.value.date ?? '',
+      this.applyForm.value.password ?? '',
       attending
     )
 

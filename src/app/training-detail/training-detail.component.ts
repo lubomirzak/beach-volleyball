@@ -70,10 +70,10 @@ import { Training } from 'src/interfaces/training'
             <td mat-cell *matCellDef="let element">{{ element.points }}</td>
           </ng-container>
 
-        <ng-container matColumnDef="ratio">
-          <th mat-header-cell *matHeaderCellDef>Ratio</th>
-          <td mat-cell *matCellDef="let element">{{ element.ratio }}</td>
-        </ng-container>
+          <ng-container matColumnDef="ratio">
+            <th mat-header-cell *matHeaderCellDef>Ratio</th>
+            <td mat-cell *matCellDef="let element">{{ element.ratio }}</td>
+          </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="scoreboardColumnNames"></tr>
           <tr mat-row *matRowDef="let row; columns: scoreboardColumnNames"></tr>
@@ -182,6 +182,19 @@ import { Training } from 'src/interfaces/training'
             </mat-form-field>
           </div>
         </div>
+
+        <div class="row" style="padding-top: 15px">
+          <div class="col">
+            <mat-form-field appearance="outline">
+              <input
+                matInput
+                placeholder="Password"
+                formControlName="password"
+              />
+            </mat-form-field>
+          </div>
+        </div>
+
         <button type="submit" mat-flat-button (click)="create()">Create</button>
       </form>
     </div>
@@ -216,12 +229,13 @@ export class TrainingDetailComponent {
     this.reloadData()
   }
 
-  readonly team1Player1 = new FormControl('auto' as FloatLabelType)
-  readonly team1Player2 = new FormControl('auto' as FloatLabelType)
-  readonly team2Player1 = new FormControl('auto' as FloatLabelType)
-  readonly team2Player2 = new FormControl('auto' as FloatLabelType)
-  readonly team1Points = new FormControl('auto' as FloatLabelType)
-  readonly team2Points = new FormControl('auto' as FloatLabelType)
+  readonly team1Player1 = new FormControl('' as FloatLabelType)
+  readonly team1Player2 = new FormControl('' as FloatLabelType)
+  readonly team2Player1 = new FormControl('' as FloatLabelType)
+  readonly team2Player2 = new FormControl('' as FloatLabelType)
+  readonly team1Points = new FormControl('' as FloatLabelType)
+  readonly team2Points = new FormControl('' as FloatLabelType)
+  readonly password = new FormControl('' as FloatLabelType)
 
   readonly options = inject(FormBuilder).group({
     team1Player1: this.team1Player1,
@@ -230,6 +244,7 @@ export class TrainingDetailComponent {
     team2Player2: this.team2Player2,
     team1Points: this.team1Points,
     team2Points: this.team2Points,
+    password: this.password,
   })
 
   protected readonly floatLabel1 = toSignal(
@@ -265,7 +280,8 @@ export class TrainingDetailComponent {
       this.options.value.team2Player1 ?? '',
       this.options.value.team2Player2 ?? '',
       parseInt(this.options.value.team1Points ?? '0'),
-      parseInt(this.options.value.team2Points ?? '0')
+      parseInt(this.options.value.team2Points ?? '0'),
+      this.options.value.password ?? '',
     )
     if (res) {
       this.options.reset()

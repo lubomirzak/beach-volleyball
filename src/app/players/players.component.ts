@@ -90,6 +90,17 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
             </mat-form-field>
           </div>
         </div>
+        <div class="row">
+          <div class="col">
+            <mat-form-field appearance="outline">
+              <input
+                matInput
+                placeholder="Password"
+                formControlName="password"
+              />
+            </mat-form-field>
+          </div>
+        </div>
         <button type="submit" mat-flat-button (click)="submitNewPlayer()">
           Create
         </button>
@@ -117,6 +128,7 @@ export class PlayersComponent {
     firstName: new FormControl(''),
     lastName: new FormControl(''),
     attending: new FormControl(''),
+    password: new FormControl(''),
   })
 
   constructor(
@@ -139,6 +151,7 @@ export class PlayersComponent {
     let res = await this.playerService.create(
       this.applyForm.value.firstName ?? '',
       this.applyForm.value.lastName ?? '',
+      this.applyForm.value.password ?? '',
       attending
     )
 

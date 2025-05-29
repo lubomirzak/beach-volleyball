@@ -10,6 +10,7 @@ import {
 import { Player } from 'src/interfaces/player'
 import { Attending } from 'src/interfaces/attending'
 import { CacheService } from './cache.service'
+import * as CryptoJS from 'crypto-js'
 
 @Injectable({
   providedIn: 'root',
@@ -50,8 +51,18 @@ export class PlayerService {
   create = async (
     firstName: string,
     lastName: string,
+    password: string,
     attending: Attending
   ): Promise<void | DocumentReference<DocumentData>> => {
+    // verify password
+    if (
+      CryptoJS.SHA1(password).toString() !=
+      '738ad30aad6a9a3425ec587e641ef683e0a534d1'
+    ) {
+      console.log('Invalid password')
+      return
+    }
+
     const player: Player = {
       id: this.generateGUID(),
       firstName: firstName,

@@ -201,9 +201,18 @@ import { Training } from 'src/interfaces/training'
   `,
   providers: [provideNativeDateAdapter()],
   styles: `
-    .col {
-        width: 30%;
-        display: -webkit-inline-box;
+    @media (min-width: 320px) {
+        .col {
+            width: 100%;
+            display: -webkit-inline-box;
+        }
+    }
+
+    @media (min-width: 600px) {
+        .col {
+            width: 30%;
+            display: -webkit-inline-box;
+        }
     }
   `,
 })
@@ -281,7 +290,7 @@ export class TrainingDetailComponent {
       this.options.value.team2Player2 ?? '',
       parseInt(this.options.value.team1Points ?? '0'),
       parseInt(this.options.value.team2Points ?? '0'),
-      this.options.value.password ?? '',
+      this.options.value.password ?? ''
     )
     if (res) {
       this.options.reset()
@@ -293,11 +302,11 @@ export class TrainingDetailComponent {
   reloadData = () => {
     this.playerService.get().then((data) => {
       this.playersData$ = data.sort((a, b) => {
-        var fullname1 = `${b.firstName} ${b.lastName}`;
-        var fullname2 = `${a.firstName} ${a.lastName}`;
+        var fullname1 = `${b.firstName} ${b.lastName}`
+        var fullname2 = `${a.firstName} ${a.lastName}`
 
-        return fullname2.localeCompare(fullname1);
-      });
+        return fullname2.localeCompare(fullname1)
+      })
     })
 
     this.trainingService.getById(this.trainingId).then((data) => {

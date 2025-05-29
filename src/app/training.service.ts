@@ -150,7 +150,7 @@ export class TrainingService {
     )
 
     // let's not count people who only played one set
-    trainingDetailScoreboards = trainingDetailScoreboards.filter(x => x.wonSets > 1);
+    trainingDetailScoreboards = trainingDetailScoreboards.filter(x => x.wonSets + x.lostSets > 1);
 
     return trainingDetailScoreboards.sort(
       (a, b) => parseFloat(b.ratio) - parseFloat(a.ratio)

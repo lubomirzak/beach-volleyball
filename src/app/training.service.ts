@@ -16,6 +16,7 @@ import { PlayerService } from './player.service'
 import { TrainingDetails } from 'src/interfaces/trainingDetails'
 import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
+import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
 import { Player } from 'src/interfaces/player'
 import * as CryptoJS from 'crypto-js'
 
@@ -100,10 +101,8 @@ export class TrainingService {
       return trainingDetailMatch
     })
 
-    var trainingDetailScoreboards = this.processTrainingDetailMatches(
-      trainingDetailMatches,
-      players
-    )
+    var [trainingDetailScoreboards, trainingDetailScoreboardsTeams] =
+      this.processTrainingDetailMatches(trainingDetailMatches, players)
 
     return {
       date: training.date,
@@ -116,7 +115,9 @@ export class TrainingService {
     }
   }
 
-  getLeaderboard = async (): Promise<TrainingDetailsScoreboard[]> => {
+  getLeaderboard = async (): Promise<
+    [TrainingDetailsScoreboard[], TrainingDetailsScoreboardTeam[]]
+  > => {
     const players = await this.playerService.get()
     const matches = await this.matchService.getAllMatches()
 
@@ -144,17 +145,27 @@ export class TrainingService {
       return trainingDetailMatch
     })
 
-    var trainingDetailScoreboards = this.processTrainingDetailMatches(
-      trainingDetailMatches,
-      players
-    )
+    var [trainingDetailScoreboards, trainingDetailScoreboardsTeams] =
+      this.processTrainingDetailMatches(trainingDetailMatches, players)
 
     // let's not count people who only played one set
-    trainingDetailScoreboards = trainingDetailScoreboards.filter(x => x.wonSets + x.lostSets > 1);
-
-    return trainingDetailScoreboards.sort(
-      (a, b) => parseFloat(b.ratio) - parseFloat(a.ratio)
+    trainingDetailScoreboards = trainingDetailScoreboards.filter(
+      (x) => x.wonSets + x.lostSets > 1
     )
+
+    // let's not count teams which played less than 5 sets
+    trainingDetailScoreboardsTeams = trainingDetailScoreboardsTeams.filter(
+      (x) => x.wonSets + x.lostSets > 4
+    )
+
+    return [
+      trainingDetailScoreboards.sort(
+        (a, b) => parseFloat(b.ratio) - parseFloat(a.ratio)
+      ),
+      trainingDetailScoreboardsTeams.sort(
+        (a, b) => parseFloat(b.ratio) - parseFloat(a.ratio)
+      ),
+    ]
   }
 
   create = async (
@@ -195,11 +206,14 @@ export class TrainingService {
   processTrainingDetailMatches = (
     trainingDetailMatches: TrainingDetailsMatch[],
     players: Player[]
-  ): TrainingDetailsScoreboard[] => {
+  ): [TrainingDetailsScoreboard[], TrainingDetailsScoreboardTeam[]] => {
     let trainingDetailScoreboards: TrainingDetailsScoreboard[] = []
+    let trainingDetailScoreboardsTeams: TrainingDetailsScoreboardTeam[] = []
 
     trainingDetailMatches.forEach((item) => {
       let team1won = item.team1Points > item.team2Points
+
+      // Process individuals
       let player11 = players.filter((x) => x.id == item.team1Player1)[0]
 
       trainingDetailScoreboards = this.processMatch(
@@ -248,9 +262,35 @@ export class TrainingService {
         team2won ? 1 : 0,
         team2won ? 0 : 1
       )
+
+      // Process teams
+
+      trainingDetailScoreboardsTeams = this.processMatchTeam(
+        trainingDetailScoreboardsTeams,
+        player11.id,
+        player12.id,
+        `${player11.firstName} ${player11.lastName}`,
+        `${player12.firstName} ${player12.lastName}`,
+        team1won ? item.team1Points : item.team2Points,
+        team1won ? item.team2Points : item.team1Points,
+        team1won ? 1 : 0,
+        team1won ? 0 : 1
+      )
+
+      trainingDetailScoreboardsTeams = this.processMatchTeam(
+        trainingDetailScoreboardsTeams,
+        player21.id,
+        player22.id,
+        `${player21.firstName} ${player21.lastName}`,
+        `${player22.firstName} ${player22.lastName}`,
+        team2won ? item.team1Points : item.team2Points,
+        team2won ? item.team2Points : item.team1Points,
+        team2won ? 1 : 0,
+        team2won ? 0 : 1
+      )
     })
 
-    return trainingDetailScoreboards
+    return [trainingDetailScoreboards, trainingDetailScoreboardsTeams]
   }
 
   processMatch = (
@@ -292,6 +332,58 @@ export class TrainingService {
     }
 
     let result = array.filter((x) => x.playerId != playerId)
+    result.push(scoreboardToUpdate)
+
+    return result
+  }
+
+  processMatchTeam = (
+    array: TrainingDetailsScoreboardTeam[],
+    player1Id: string,
+    player2Id: string,
+    name1: string,
+    name2: string,
+    wonPoints: number,
+    lostPoints: number,
+    wonSets: number,
+    lostSets: number
+  ): TrainingDetailsScoreboardTeam[] => {
+    let exists = array.filter(
+      (x) => x.player1Id == player1Id && x.player2Id == player2Id
+    )
+
+    let scoreboardToUpdate: TrainingDetailsScoreboardTeam
+    if (exists.length > 0) {
+      scoreboardToUpdate = exists[0]
+      scoreboardToUpdate.lostPoints += lostPoints
+      scoreboardToUpdate.lostSets += lostSets
+      scoreboardToUpdate.wonPoints += wonPoints
+      scoreboardToUpdate.wonSets += wonSets
+      scoreboardToUpdate.points = `${scoreboardToUpdate.wonPoints}:${scoreboardToUpdate.lostPoints}`
+      scoreboardToUpdate.sets = `${scoreboardToUpdate.wonSets}:${scoreboardToUpdate.lostSets}`
+
+      scoreboardToUpdate.ratio = this.calculateRatio(
+        scoreboardToUpdate.wonSets,
+        scoreboardToUpdate.lostSets
+      )
+    } else {
+      scoreboardToUpdate = {
+        player1Id: player1Id,
+        player2Id: player2Id,
+        lostPoints: lostPoints,
+        lostSets: lostSets,
+        name: `${name1}, ${name2}`,
+        points: `${wonPoints}:${lostPoints}`,
+        sets: `${wonSets}:${lostSets}`,
+        wonPoints: wonPoints,
+        wonSets: wonSets,
+        ratio: this.calculateRatio(wonSets, lostSets),
+      }
+    }
+
+    let result = array.filter(
+      (x) => x.player1Id != player1Id || x.player2Id != player2Id
+    )
     result.push(scoreboardToUpdate)
 
     return result

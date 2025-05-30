@@ -7,7 +7,7 @@
   justify-content: space-around;
 }
 
-input[type="text"] {
+input[type='text'] {
   border: solid 1px var(--primary-color);
   padding: 10px;
   border-radius: 8px;
@@ -26,15 +26,46 @@ button {
 
 @media (min-width: 500px) and (max-width: 768px) {
   .results {
-      grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
-  input[type="text"] {
-      width: 70%;
-  }   
+  input[type='text'] {
+    width: 70%;
+  }
 }
 
 @media (max-width: 499px) {
   .results {
-      grid-template-columns: 1fr;
-  }    
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 320px) {
+  .table {
+    width: 100%;
+    display: block;
+  }
+
+  .table-left {
+    padding-right: 0;
+  }
+
+  .table-right {
+    padding-top: 35px;
+  }
+}
+
+@media (min-width: 600px) {
+  .table {
+    width: 45%;
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  .table-left {
+    padding-right: 50px;
+  }
+
+  .table-right {
+    padding-top: 0;
+  }
 }

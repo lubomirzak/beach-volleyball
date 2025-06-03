@@ -1,5 +1,5 @@
 import { Component } from '@angular/core'
-import { KeyValuePipe, NgIf } from '@angular/common'
+import { NgIf } from '@angular/common'
 import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
 import { MatInputModule } from '@angular/material/input'
@@ -25,7 +25,6 @@ import { FineDetails } from 'src/interfaces/fineDetails'
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    KeyValuePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,

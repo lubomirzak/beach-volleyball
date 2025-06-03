@@ -45,8 +45,10 @@ import { CommonModule } from '@angular/common'
         <mat-sidenav-container style="min-height: 1000px">
           <mat-sidenav mode="side" opened>
             <mat-nav-list class="sidebar">
+              <a mat-list-item [routerLink]="['/']">Home</a>
               <a mat-list-item [routerLink]="['/trainings']">Trainings</a>
               <a mat-list-item [routerLink]="['/players']">Players</a>
+              <a mat-list-item [routerLink]="['/fines']">Fines</a>
             </mat-nav-list>
           </mat-sidenav>
           <mat-sidenav-content>

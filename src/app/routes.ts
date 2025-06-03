@@ -3,12 +3,13 @@ import { HomeComponent } from './home/home.component'
 import { PlayersComponent } from './players/players.component'
 import { TrainingsComponent } from './trainings/trainings.component'
 import { TrainingDetailComponent } from './training-detail/training-detail.component'
+import { FinesComponent } from './fines/fines.component'
 
 const routeConfig: Routes = [
   {
     path: '',
     component: HomeComponent,
-    title: 'Home page',
+    title: 'Beach Volley Stats',
   },
   {
     path: 'players',
@@ -24,6 +25,11 @@ const routeConfig: Routes = [
     path: 'trainingdetail/:id',
     component: TrainingDetailComponent,
     title: 'Training details',
+  },
+    {
+    path: 'fines',
+    component: FinesComponent,
+    title: 'Fines',
   },
 ]
 export default routeConfig

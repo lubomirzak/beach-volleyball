@@ -133,7 +133,7 @@ import { Team } from 'src/interfaces/team'
             </mat-form-field>
           </div>
           <div class="col">
-             <mat-form-field appearance="outline" [floatLabel]="floatLabel22()">
+            <mat-form-field appearance="outline" [floatLabel]="floatLabel22()">
               <mat-label>Team 1</mat-label>
               <mat-select placeholder="Team 1" formControlName="team1">
                 @for (item of teamsData$; track $index ){
@@ -170,8 +170,8 @@ import { Team } from 'src/interfaces/team'
               </mat-select>
             </mat-form-field>
           </div>
-             <div class="col">
-             <mat-form-field appearance="outline" [floatLabel]="floatLabel44()">
+          <div class="col">
+            <mat-form-field appearance="outline" [floatLabel]="floatLabel44()">
               <mat-label>Team 2</mat-label>
               <mat-select placeholder="Team 2" formControlName="team2">
                 @for (item of teamsData$; track $index ){
@@ -319,38 +319,32 @@ export class TrainingDetailComponent {
     { initialValue: 'auto' }
   )
 
-    ngAfterViewInit() {
-      // this.form.get('email').valueChanges.subscribe(val => {
-      //   this.formattedMessage = `Email is: ${val}.`;
-      //   console.log(this.formattedMessage);
-      // });
+  ngAfterViewInit() {
+    this.options.valueChanges.subscribe((x) => {
+      if (x.team1) {
+        let players = x.team1.split('###')
 
+        this.team1Player1.setValue(players[0] as FloatLabelType, {
+          emitEvent: false,
+        })
+        this.team1Player2.setValue(players[1] as FloatLabelType, {
+          emitEvent: false,
+        })
+        this.team1.setValue('' as FloatLabelType, { emitEvent: false })
+      }
 
-      this.options.valueChanges.subscribe((x) => {
-        console.log(x);
+      if (x.team2) {
+        let players = x.team2.split('###')
 
-        if (x.team1) {
-
-          let players = x.team1.split("###");
-
-          this.team1Player1.setValue(players[0] as FloatLabelType, { emitEvent: false });
-          this.team1Player2.setValue(players[1] as FloatLabelType, { emitEvent: false });
-          this.team1.setValue('' as FloatLabelType, {emitEvent: false});
-        }
-
-        if (x.team2) {
-
-          let players = x.team2.split("###");
-
-          this.team2Player1.setValue(players[0] as FloatLabelType, { emitEvent: false });
-          this.team2Player2.setValue(players[1] as FloatLabelType, { emitEvent: false });
-          this.team2.setValue('' as FloatLabelType, {emitEvent: false});
-        }
-      });
-
-//       this.options.get('team1')?.valueChanges.subscribe((x) => {
-// console.log(x);
-//       });
+        this.team2Player1.setValue(players[0] as FloatLabelType, {
+          emitEvent: false,
+        })
+        this.team2Player2.setValue(players[1] as FloatLabelType, {
+          emitEvent: false,
+        })
+        this.team2.setValue('' as FloatLabelType, { emitEvent: false })
+      }
+    })
   }
 
   create = async () => {

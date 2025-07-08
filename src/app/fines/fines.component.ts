@@ -166,7 +166,9 @@ export class FinesComponent {
     )
     if (res) {
       this.reloadData()
-      this.snackBar.open('Fine was created')
+      this.snackBar.open('Fine was created', 'Close', {
+        duration: 3000,
+      })
     }
   }
 

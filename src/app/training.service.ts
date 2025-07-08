@@ -19,6 +19,7 @@ import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScorebo
 import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
 import { Player } from 'src/interfaces/player'
 import * as CryptoJS from 'crypto-js'
+import { Team } from 'src/interfaces/team'
 
 @Injectable({
   providedIn: 'root',
@@ -113,6 +114,53 @@ export class TrainingService {
       ),
       type: training.type,
     }
+  }
+
+  getTeams = async (): Promise<Team[]> => {
+    const players = await this.playerService.get()
+    let matches = await this.matchService.getAllMatches()
+
+    let result: Team[] = [];
+
+    matches.map((x) => {
+      let player11 = players.filter((y) => y.id == x.team1Player1)[0]
+      let player12 = players.filter((y) => y.id == x.team1Player2)[0]
+      let player21 = players.filter((y) => y.id == x.team2Player1)[0]
+      let player22 = players.filter((y) => y.id == x.team2Player2)[0]
+
+      // check if team exists
+      let team1exists = result.filter(x => x.player1Id == player11.id && x.player2Id == player12.id);
+      if (team1exists.length > 0){
+        team1exists[0].setsPlayed = team1exists[0].setsPlayed + 1;
+      }
+      else {
+        result.push({
+          id: `${player11.id}###${player12.id}`,
+          setsPlayed: 1,
+          player1Id: player11.id,
+          player1Name: `${player11.firstName} ${player11.lastName}`,
+          player2Id: player12.id,
+          player2Name: `${player12.firstName} ${player12.lastName}`
+        })
+      }
+
+      // check if second team exists
+      let team2exists = result.filter(x => x.player1Id == player21.id && x.player2Id == player22.id);
+      if (team2exists.length > 0){
+        team2exists[0].setsPlayed = team2exists[0].setsPlayed + 1;
+      } else {
+        result.push({
+          id: `${player21.id}###${player22.id}`,
+          setsPlayed: 1,
+          player1Id: player21.id,
+          player1Name: `${player21.firstName} ${player21.lastName}`,
+          player2Id: player22.id,
+          player2Name: `${player22.firstName} ${player22.lastName}`
+        })
+      }
+    })
+
+    return result.sort((a,b) => b.setsPlayed - a.setsPlayed)
   }
 
   getLeaderboard = async (): Promise<

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core'
+import { Component, inject, AfterViewInit } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
@@ -23,6 +23,7 @@ import { ActivatedRoute } from '@angular/router'
 import { toSignal } from '@angular/core/rxjs-interop'
 import { map } from 'rxjs/operators'
 import { Training } from 'src/interfaces/training'
+import { Team } from 'src/interfaces/team'
 
 @Component({
   selector: 'app-training-detail',
@@ -120,9 +121,9 @@ import { Training } from 'src/interfaces/training'
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel3()">
-              <mat-label>Team 2 Player 1</mat-label>
-              <mat-select placeholder="Player 1" formControlName="team2Player1">
+            <mat-form-field appearance="outline" [floatLabel]="floatLabel2()">
+              <mat-label>Team 1 Player 2</mat-label>
+              <mat-select placeholder="Player 2" formControlName="team1Player2">
                 @for (item of playersData$; track $index ){
                 <mat-option value="{{ item.id }}"
                   >{{ item.firstName }} {{ item.lastName }}</mat-option
@@ -131,12 +132,24 @@ import { Training } from 'src/interfaces/training'
               </mat-select>
             </mat-form-field>
           </div>
+          <div class="col">
+             <mat-form-field appearance="outline" [floatLabel]="floatLabel22()">
+              <mat-label>Team 1</mat-label>
+              <mat-select placeholder="Team 1" formControlName="team1">
+                @for (item of teamsData$; track $index ){
+                <mat-option value="{{ item.id }}"
+                  >{{ item.player1Name }}, {{ item.player2Name }}</mat-option
+                >
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
         </div>
         <div class="row" style="padding-top: 15px">
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel2()">
-              <mat-label>Team 1 Player 2</mat-label>
-              <mat-select placeholder="Player 2" formControlName="team1Player2">
+            <mat-form-field appearance="outline" [floatLabel]="floatLabel3()">
+              <mat-label>Team 2 Player 1</mat-label>
+              <mat-select placeholder="Player 1" formControlName="team2Player1">
                 @for (item of playersData$; track $index ){
                 <mat-option value="{{ item.id }}"
                   >{{ item.firstName }} {{ item.lastName }}</mat-option
@@ -152,6 +165,18 @@ import { Training } from 'src/interfaces/training'
                 @for (item of playersData$; track $index ){
                 <mat-option value="{{ item.id }}"
                   >{{ item.firstName }} {{ item.lastName }}</mat-option
+                >
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+             <div class="col">
+             <mat-form-field appearance="outline" [floatLabel]="floatLabel44()">
+              <mat-label>Team 2</mat-label>
+              <mat-select placeholder="Team 2" formControlName="team2">
+                @for (item of teamsData$; track $index ){
+                <mat-option value="{{ item.id }}"
+                  >{{ item.player1Name }}, {{ item.player2Name }}</mat-option
                 >
                 }
               </mat-select>
@@ -221,6 +246,7 @@ export class TrainingDetailComponent {
   matches$: any[] = []
   scoreboards$: any[] = []
   playersData$: any[] = []
+  teamsData$: Team[] = []
   trainingData$?: Training = undefined
   columnNames: any[] = ['team1', 'team2', 'score']
   scoreboardColumnNames: any[] = ['name', 'sets', 'points', 'ratio']
@@ -240,15 +266,19 @@ export class TrainingDetailComponent {
 
   readonly team1Player1 = new FormControl('' as FloatLabelType)
   readonly team1Player2 = new FormControl('' as FloatLabelType)
+  readonly team1 = new FormControl('' as FloatLabelType)
+  readonly team2 = new FormControl('' as FloatLabelType)
   readonly team2Player1 = new FormControl('' as FloatLabelType)
   readonly team2Player2 = new FormControl('' as FloatLabelType)
-  readonly team1Points = new FormControl('' as FloatLabelType)
+  readonly team1Points = new FormControl('21' as FloatLabelType)
   readonly team2Points = new FormControl('' as FloatLabelType)
   readonly password = new FormControl('' as FloatLabelType)
 
   readonly options = inject(FormBuilder).group({
     team1Player1: this.team1Player1,
     team1Player2: this.team1Player2,
+    team1: this.team1,
+    team2: this.team2,
     team2Player1: this.team2Player1,
     team2Player2: this.team2Player2,
     team1Points: this.team1Points,
@@ -264,12 +294,20 @@ export class TrainingDetailComponent {
     this.team2Player1.valueChanges.pipe(map((v) => v || 'auto')),
     { initialValue: 'auto' }
   )
+  protected readonly floatLabel22 = toSignal(
+    this.team1.valueChanges.pipe(map((v) => v || 'auto')),
+    { initialValue: 'auto' }
+  )
   protected readonly floatLabel3 = toSignal(
     this.team1Player2.valueChanges.pipe(map((v) => v || 'auto')),
     { initialValue: 'auto' }
   )
   protected readonly floatLabel4 = toSignal(
     this.team2Player2.valueChanges.pipe(map((v) => v || 'auto')),
+    { initialValue: 'auto' }
+  )
+  protected readonly floatLabel44 = toSignal(
+    this.team1.valueChanges.pipe(map((v) => v || 'auto')),
     { initialValue: 'auto' }
   )
   protected readonly floatLabel5 = toSignal(
@@ -280,6 +318,40 @@ export class TrainingDetailComponent {
     this.team2Points.valueChanges.pipe(map((v) => v || 'auto')),
     { initialValue: 'auto' }
   )
+
+    ngAfterViewInit() {
+      // this.form.get('email').valueChanges.subscribe(val => {
+      //   this.formattedMessage = `Email is: ${val}.`;
+      //   console.log(this.formattedMessage);
+      // });
+
+
+      this.options.valueChanges.subscribe((x) => {
+        console.log(x);
+
+        if (x.team1) {
+
+          let players = x.team1.split("###");
+
+          this.team1Player1.setValue(players[0] as FloatLabelType, { emitEvent: false });
+          this.team1Player2.setValue(players[1] as FloatLabelType, { emitEvent: false });
+          this.team1.setValue('' as FloatLabelType, {emitEvent: false});
+        }
+
+        if (x.team2) {
+
+          let players = x.team2.split("###");
+
+          this.team2Player1.setValue(players[0] as FloatLabelType, { emitEvent: false });
+          this.team2Player2.setValue(players[1] as FloatLabelType, { emitEvent: false });
+          this.team2.setValue('' as FloatLabelType, {emitEvent: false});
+        }
+      });
+
+//       this.options.get('team1')?.valueChanges.subscribe((x) => {
+// console.log(x);
+//       });
+  }
 
   create = async () => {
     let res = await this.matchService.create(
@@ -295,7 +367,9 @@ export class TrainingDetailComponent {
     if (res) {
       this.options.reset()
       this.reloadData()
-      this.snackBar.open('Match was created')
+      this.snackBar.open('Match was created', 'Close', {
+        duration: 3000,
+      })
     }
   }
 
@@ -316,7 +390,10 @@ export class TrainingDetailComponent {
     this.trainingService.getTrainingDetails(this.trainingId).then((data) => {
       this.matches$ = data.matches
       this.scoreboards$ = data.scoreboards
+    })
 
+    this.trainingService.getTeams().then((data) => {
+      this.teamsData$ = data
       this.showSpinner = false
     })
   }

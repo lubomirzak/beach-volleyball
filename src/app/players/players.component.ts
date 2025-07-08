@@ -158,7 +158,9 @@ export class PlayersComponent {
     if (res) {
       this.applyForm.reset()
       this.reloadData()
-      this.snackBar.open('Player was created')
+      this.snackBar.open('Player was created', 'Close', {
+        duration: 3000,
+      })
     }
   }
 

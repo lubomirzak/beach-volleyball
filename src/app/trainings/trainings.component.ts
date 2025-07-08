@@ -139,7 +139,9 @@ export class TrainingsComponent {
     if (res) {
       this.applyForm.reset()
       this.reloadData()
-      this.snackBar.open('Training was created')
+      this.snackBar.open('Training was created', 'Close', {
+        duration: 3000,
+      })
     }
   }
 

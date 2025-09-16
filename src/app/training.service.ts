@@ -196,14 +196,14 @@ export class TrainingService {
     var [trainingDetailScoreboards, trainingDetailScoreboardsTeams] =
       this.processTrainingDetailMatches(trainingDetailMatches, players)
 
-    // let's not count people who only played one set
+    // let's not count people who only played one training = 5 sets
     trainingDetailScoreboards = trainingDetailScoreboards.filter(
-      (x) => x.wonSets + x.lostSets > 1
+      (x) => x.wonSets + x.lostSets > 5
     )
 
-    // let's not count teams which played less than 5 sets
+    // let's not count teams which played less than 6 sets together 
     trainingDetailScoreboardsTeams = trainingDetailScoreboardsTeams.filter(
-      (x) => x.wonSets + x.lostSets > 4
+      (x) => x.wonSets + x.lostSets > 5
     )
 
     return [

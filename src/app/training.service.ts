@@ -17,6 +17,7 @@ import { TrainingDetails } from 'src/interfaces/trainingDetails'
 import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
 import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
+import { SeasonService } from './season.service'
 import { Player } from 'src/interfaces/player'
 import * as CryptoJS from 'crypto-js'
 import { Team } from 'src/interfaces/team'
@@ -25,16 +26,20 @@ import { Team } from 'src/interfaces/team'
   providedIn: 'root',
 })
 export class TrainingService {
+  collectionName: string
   constructor(
     private firestore: Firestore,
     private matchService: MatchService,
-    private playerService: PlayerService
-  ) {}
+    private playerService: PlayerService,
+    seasonService: SeasonService
+  ) {
+        this.collectionName = 'trainings' + seasonService.getSuffix();
+  }
 
   get = async (): Promise<Training[]> => {
     let result: Training[] = []
 
-    const snapshot = await getDocs(collection(this.firestore, 'trainings'))
+    const snapshot = await getDocs(collection(this.firestore, this.collectionName))
     snapshot.forEach((doc) => {
       let item = doc.data()
       let date = new Date(item['date']['seconds'] * 1000)
@@ -54,7 +59,7 @@ export class TrainingService {
   getById = async (trainingId: string): Promise<Training> => {
     let result: Training[] = []
 
-    let trainingsRef = collection(this.firestore, 'trainings')
+    let trainingsRef = collection(this.firestore,  this.collectionName)
     let queryRef = query(trainingsRef, where('id', '==', trainingId))
     const snapshot = await getDocs(queryRef)
     snapshot.forEach((doc) => {
@@ -241,7 +246,7 @@ export class TrainingService {
 
     try {
       const newMessageRef = await addDoc(
-        collection(this.firestore, 'trainings'),
+        collection(this.firestore,  this.collectionName),
         player
       )
       return newMessageRef

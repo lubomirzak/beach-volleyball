@@ -9,6 +9,7 @@ import {
 } from '@angular/fire/firestore'
 import { FineDetails } from 'src/interfaces/fineDetails'
 import { CacheService } from './cache.service'
+import { SeasonService } from './season.service'
 import * as CryptoJS from 'crypto-js'
 import { PlayerService } from './player.service'
 import { Player } from 'src/interfaces/player'
@@ -20,19 +21,23 @@ import { Fine } from 'src/interfaces/fine'
   providedIn: 'root',
 })
 export class FineService {
+  collectionName: string
   constructor(
     private firestore: Firestore,
     private cacheService: CacheService,
     private playerService: PlayerService,
-    private trainingService: TrainingService
-  ) {}
+    private trainingService: TrainingService,
+    seasonService: SeasonService
+  ) {
+    this.collectionName = 'fines' + seasonService.getSuffix();
+  }
 
   get = async (): Promise<FineDetails[]> => {
     let result: FineDetails[] = []
     let playersData: Player[] = []
     let trainingsData: Training[] = []
 
-    let finesFromCache = this.cacheService.get('fines')
+    let finesFromCache = this.cacheService.get(this.collectionName)
     if (finesFromCache.length != 0) {
       console.log('Returning fines from cache')
       return finesFromCache
@@ -41,7 +46,7 @@ export class FineService {
     playersData = await this.playerService.get()
     trainingsData = await this.trainingService.get()
 
-    const snapshot = await getDocs(collection(this.firestore, 'fines'))
+    const snapshot = await getDocs(collection(this.firestore, this.collectionName))
     snapshot.forEach((doc) => {
       let item = doc.data()
 
@@ -92,7 +97,7 @@ export class FineService {
 
     try {
       const newMessageRef = await addDoc(
-        collection(this.firestore, 'fines'),
+        collection(this.firestore, this.collectionName),
         fine
       )
       return newMessageRef

@@ -10,17 +10,25 @@ import {
   query,
 } from '@angular/fire/firestore'
 import { Match } from 'src/interfaces/match'
+import { SeasonService } from './season.service'
 import * as CryptoJS from 'crypto-js'
 
 @Injectable({
   providedIn: 'root',
 })
 export class MatchService {
-  constructor(private firestore: Firestore) {}
+  collectionName: string
+  constructor(
+    private firestore: Firestore,
+    seasonService: SeasonService
+  ) {
+        this.collectionName = 'matches' + seasonService.getSuffix();
+  }
+
   getMatchesForTraining = async (trainingId: string): Promise<Match[]> => {
     let result: Match[] = []
 
-    let matchesRef = collection(this.firestore, 'matches')
+    let matchesRef = collection(this.firestore, this.collectionName)
     let queryRef = query(matchesRef, where('trainingId', '==', trainingId))
     const snapshot = await getDocs(queryRef)
     snapshot.forEach((doc) => {
@@ -47,7 +55,7 @@ export class MatchService {
   getAllMatches = async (): Promise<Match[]> => {
     let result: Match[] = []
 
-    let matchesRef = collection(this.firestore, 'matches')
+    let matchesRef = collection(this.firestore,  this.collectionName)
     let queryRef = query(matchesRef)
 
     const snapshot = await getDocs(queryRef)
@@ -105,7 +113,7 @@ export class MatchService {
 
     try {
       const newMessageRef = await addDoc(
-        collection(this.firestore, 'matches'),
+        collection(this.firestore, this.collectionName),
         match
       )
       return newMessageRef

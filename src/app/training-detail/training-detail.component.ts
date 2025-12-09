@@ -24,6 +24,7 @@ import { toSignal } from '@angular/core/rxjs-interop'
 import { map } from 'rxjs/operators'
 import { Training } from 'src/interfaces/training'
 import { Team } from 'src/interfaces/team'
+import { Match } from 'src/interfaces/match'
 
 @Component({
   selector: 'app-training-detail',
@@ -85,12 +86,26 @@ import { Team } from 'src/interfaces/team'
       <table mat-table [dataSource]="matches$">
         <ng-container matColumnDef="team1">
           <th mat-header-cell *matHeaderCellDef>Team 1</th>
-          <td mat-cell *matCellDef="let element">{{ element.team1 }}</td>
+          <td
+            mat-cell
+            *matCellDef="let element"
+            (click)="setTeam(element.team1Player1, element.team1Player2)"
+            (dblclick)="clearTeams()"
+          >
+            {{ element.team1 }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="team2">
           <th mat-header-cell *matHeaderCellDef>Team 2</th>
-          <td mat-cell *matCellDef="let element">{{ element.team2 }}</td>
+          <td
+            mat-cell
+            *matCellDef="let element"
+            (click)="setTeam(element.team2Player1, element.team2Player2)"
+            (dblclick)="clearTeams()"
+          >
+            {{ element.team2 }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="score">
@@ -348,12 +363,22 @@ export class TrainingDetailComponent {
   }
 
   create = async () => {
+    let t1p1 = this.options.value.team1Player1 ?? ''
+    let t1p2 = this.options.value.team1Player2 ?? ''
+    let t2p1 = this.options.value.team2Player1 ?? ''
+    let t2p2 = this.options.value.team2Player2 ?? ''
+
+    if (t1p1 == '' || t1p2 == '' || t2p1 == '' || t2p2 == '') {
+      console.log('Something went wrong - no players selected.')
+      return
+    }
+
     let res = await this.matchService.create(
       this.trainingId,
-      this.options.value.team1Player1 ?? '',
-      this.options.value.team1Player2 ?? '',
-      this.options.value.team2Player1 ?? '',
-      this.options.value.team2Player2 ?? '',
+      t1p1,
+      t1p2,
+      t2p1,
+      t2p2,
       parseInt(this.options.value.team1Points ?? '0'),
       parseInt(this.options.value.team2Points ?? '0'),
       this.options.value.password ?? ''
@@ -361,6 +386,9 @@ export class TrainingDetailComponent {
     if (res) {
       this.options.reset()
       this.reloadData()
+      this.team1Points.setValue('21' as FloatLabelType, {
+        emitEvent: false,
+      })
       this.snackBar.open('Match was created', 'Close', {
         duration: 3000,
       })
@@ -389,6 +417,41 @@ export class TrainingDetailComponent {
     this.trainingService.getTeams().then((data) => {
       this.teamsData$ = data
       this.showSpinner = false
+    })
+  }
+
+  setTeam = (player1: string, player2: string) => {
+    let t1p1AsString = this.options.value.team1Player1 as String;
+
+    if (t1p1AsString == null || t1p1AsString === '') {
+      this.team1Player1.setValue(player1 as FloatLabelType, {
+        emitEvent: false,
+      })
+      this.team1Player2.setValue(player2 as FloatLabelType, {
+        emitEvent: false,
+      })
+    } else {
+      this.team2Player1.setValue(player1 as FloatLabelType, {
+        emitEvent: false,
+      })
+      this.team2Player2.setValue(player2 as FloatLabelType, {
+        emitEvent: false,
+      })
+    }
+  }
+
+  clearTeams = () => {
+    this.team1Player1.setValue('' as FloatLabelType, {
+      emitEvent: false,
+    })
+    this.team1Player2.setValue('' as FloatLabelType, {
+      emitEvent: false,
+    })
+    this.team2Player1.setValue('' as FloatLabelType, {
+      emitEvent: false,
+    })
+    this.team2Player2.setValue('' as FloatLabelType, {
+      emitEvent: false,
     })
   }
 }

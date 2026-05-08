@@ -6,6 +6,6 @@ import { Injectable } from '@angular/core';
 export class SeasonService {
   // Gets current season
   getSuffix(): string {
-    return "_W2025";
+    return "_S2026";
   }
 }

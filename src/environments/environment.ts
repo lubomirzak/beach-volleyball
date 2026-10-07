@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
+  adminEmail: 'lubomir.zak@gmail.com',
   firebase: {
     apiKey: "AIzaSyBBOerYQfeW8A-fU_qzImYAUKsHY7HrdSc",
     authDomain: "beach-volley-157cf.firebaseapp.com",

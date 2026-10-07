@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core'
+import { Component, ViewChild, inject } from '@angular/core'
 import { NavigationEnd, Router, RouterModule } from '@angular/router'
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav'
 import { MatListModule, MatNavList } from '@angular/material/list'
@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon'
 import routeConfig from './routes'
 import { filter } from 'rxjs'
 import { CommonModule } from '@angular/common'
+import { AuthService } from './auth.service'
 
 @Component({
   selector: 'app-root',
@@ -39,7 +40,18 @@ import { CommonModule } from '@angular/common'
           </div>
           <div class="logo-text">Beach volley stats</div>
         </a>
+        <div class="auth-controls">
+          @if (authService.user$ | async; as account) {
+            <span>{{ account.displayName || account.email }}</span>
+            <button mat-button type="button" (click)="signOut()">Sign out</button>
+          } @else {
+            <button mat-button type="button" (click)="signIn()">Sign in with Google</button>
+          }
+        </div>
       </div>
+      @if (authError) {
+        <p class="auth-error" role="alert">{{ authError }}</p>
+      }
 
       <section>
         <mat-sidenav-container style="min-height: 1000px">
@@ -65,6 +77,40 @@ import { CommonModule } from '@angular/common'
 export class AppComponent {
   title = 'homes'
   routes: any = routeConfig
+  readonly authService = inject(AuthService)
+  authError = ''
+
+  async signIn() {
+    this.authError = ''
+    try {
+      await this.authService.signIn()
+    } catch (error) {
+      console.error('Google sign-in failed', error)
+      const code = error && typeof error === 'object' && 'code' in error
+        ? String(error.code)
+        : 'unknown-error'
+      switch (code) {
+        case 'auth/unauthorized-domain':
+          this.authError = 'Add localhost in Firebase Authentication → Settings → Authorized domains.'
+          break
+        case 'auth/operation-not-allowed':
+          this.authError = 'Enable Google in Firebase Authentication → Sign-in method.'
+          break
+        case 'auth/popup-blocked':
+          this.authError = 'Allow pop-ups for localhost and try again.'
+          break
+        case 'auth/popup-closed-by-user':
+          this.authError = 'The sign-in window closed before sign-in finished.'
+          break
+        default:
+          this.authError = `Google sign-in failed (${code}). Check the browser console.`
+      }
+    }
+  }
+
+  async signOut() {
+    await this.authService.signOut()
+  }
 
   @ViewChild(MatSidenav)
   sidenav!: MatSidenav

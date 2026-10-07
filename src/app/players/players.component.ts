@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core'
-import { KeyValuePipe, NgIf } from '@angular/common'
+import { AsyncPipe, KeyValuePipe, NgIf } from '@angular/common'
 import { Player } from 'src/interfaces/player'
 import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
@@ -7,6 +7,7 @@ import { MatSelectModule } from '@angular/material/select'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { PlayerService } from '../player.service'
+import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
@@ -26,6 +27,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
     MatDividerModule,
     MatProgressSpinnerModule,
     NgIf,
+    AsyncPipe,
   ],
   template: `
     <div *ngIf="showSpinner">
@@ -54,6 +56,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
 
+      @if (authService.isAdmin$ | async) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add player</h3>
@@ -90,21 +93,11 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
             </mat-form-field>
           </div>
         </div>
-        <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <input
-                matInput
-                placeholder="Password"
-                formControlName="password"
-              />
-            </mat-form-field>
-          </div>
-        </div>
         <button type="submit" mat-flat-button (click)="submitNewPlayer()">
           Create
         </button>
       </form>
+      }
     </div>
   `,
   styles: `
@@ -120,6 +113,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
   }`,
 })
 export class PlayersComponent {
+  readonly authService = inject(AuthService)
   playersData$: Player[] = []
   columnNames: any[] = ['firstName', 'lastName', 'attending']
   showSpinner: boolean = true
@@ -128,7 +122,6 @@ export class PlayersComponent {
     firstName: new FormControl(''),
     lastName: new FormControl(''),
     attending: new FormControl(''),
-    password: new FormControl(''),
   })
 
   constructor(
@@ -151,7 +144,6 @@ export class PlayersComponent {
     let res = await this.playerService.create(
       this.applyForm.value.firstName ?? '',
       this.applyForm.value.lastName ?? '',
-      this.applyForm.value.password ?? '',
       attending
     )
 
@@ -161,6 +153,8 @@ export class PlayersComponent {
       this.snackBar.open('Player was created', 'Close', {
         duration: 3000,
       })
+    } else {
+      this.snackBar.open('Could not create player. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
     }
   }
 

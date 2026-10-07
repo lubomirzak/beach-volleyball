@@ -10,6 +10,7 @@ import {
 } from '@angular/material/form-field'
 import { TrainingService } from '../training.service'
 import { MatchService } from '../match.service'
+import { AuthService } from '../auth.service'
 import { PlayerService } from '../player.service'
 import { FormControl, ReactiveFormsModule, FormBuilder } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
@@ -117,6 +118,7 @@ import { Match } from 'src/interfaces/match'
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
 
+      @if (authService.isAdmin$ | async) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add match result</h3>
@@ -223,20 +225,10 @@ import { Match } from 'src/interfaces/match'
           </div>
         </div>
 
-        <div class="row" style="padding-top: 15px">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <input
-                matInput
-                placeholder="Password"
-                formControlName="password"
-              />
-            </mat-form-field>
-          </div>
-        </div>
 
         <button type="submit" mat-flat-button (click)="create()">Create</button>
       </form>
+      }
     </div>
   `,
   providers: [provideNativeDateAdapter()],
@@ -257,6 +249,7 @@ import { Match } from 'src/interfaces/match'
   `,
 })
 export class TrainingDetailComponent {
+  readonly authService = inject(AuthService)
   trainingId: string
   matches$: any[] = []
   scoreboards$: any[] = []
@@ -287,7 +280,6 @@ export class TrainingDetailComponent {
   readonly team2Player2 = new FormControl('' as FloatLabelType)
   readonly team1Points = new FormControl('21' as FloatLabelType)
   readonly team2Points = new FormControl('' as FloatLabelType)
-  readonly password = new FormControl('' as FloatLabelType)
 
   readonly options = inject(FormBuilder).group({
     team1Player1: this.team1Player1,
@@ -298,7 +290,6 @@ export class TrainingDetailComponent {
     team2Player2: this.team2Player2,
     team1Points: this.team1Points,
     team2Points: this.team2Points,
-    password: this.password,
   })
 
   protected readonly floatLabel1 = toSignal(
@@ -380,8 +371,7 @@ export class TrainingDetailComponent {
       t2p1,
       t2p2,
       parseInt(this.options.value.team1Points ?? '0'),
-      parseInt(this.options.value.team2Points ?? '0'),
-      this.options.value.password ?? ''
+      parseInt(this.options.value.team2Points ?? '0')
     )
     if (res) {
       this.options.reset()
@@ -392,6 +382,8 @@ export class TrainingDetailComponent {
       this.snackBar.open('Match was created', 'Close', {
         duration: 3000,
       })
+    } else {
+      this.snackBar.open('Could not create match. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
     }
   }
 

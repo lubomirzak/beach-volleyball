@@ -19,7 +19,6 @@ import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScorebo
 import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
 import { SeasonService } from './season.service'
 import { Player } from 'src/interfaces/player'
-import * as CryptoJS from 'crypto-js'
 import { Team } from 'src/interfaces/team'
 
 @Injectable({
@@ -223,18 +222,8 @@ export class TrainingService {
 
   create = async (
     date: string,
-    password: string,
     type: Attending
   ): Promise<void | DocumentReference<DocumentData>> => {
-    // verify password
-    if (
-      CryptoJS.SHA1(password).toString() !=
-      '738ad30aad6a9a3425ec587e641ef683e0a534d1'
-    ) {
-      console.log('Invalid password')
-      return
-    }
-
     const timestamp = Date.parse(date)
     const dateToBeSaved = new Date(timestamp)
 

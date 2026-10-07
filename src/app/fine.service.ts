@@ -10,7 +10,6 @@ import {
 import { FineDetails } from 'src/interfaces/fineDetails'
 import { CacheService } from './cache.service'
 import { SeasonService } from './season.service'
-import * as CryptoJS from 'crypto-js'
 import { PlayerService } from './player.service'
 import { Player } from 'src/interfaces/player'
 import { TrainingService } from './training.service'
@@ -75,18 +74,8 @@ export class FineService {
   create = async (
     playerId: string,
     trainingId: string,
-    password: string,
     amount: number
   ): Promise<void | DocumentReference<DocumentData>> => {
-    // verify password
-    if (
-      CryptoJS.SHA1(password).toString() !=
-      '738ad30aad6a9a3425ec587e641ef683e0a534d1'
-    ) {
-      console.log('Invalid password')
-      return
-    }
-
     const fine: Fine = {
       id: this.generateGUID(),
       playerId: playerId,

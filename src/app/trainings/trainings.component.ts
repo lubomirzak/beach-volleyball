@@ -1,11 +1,12 @@
-import { Component } from '@angular/core'
-import { KeyValuePipe, NgIf } from '@angular/common'
+import { Component, inject } from '@angular/core'
+import { AsyncPipe, KeyValuePipe, NgIf } from '@angular/common'
 import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
 import { MatSelectModule } from '@angular/material/select'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { TrainingService } from '../training.service'
+import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -29,6 +30,7 @@ import { RouterModule } from '@angular/router'
     MatProgressSpinnerModule,
     MatDatepickerModule,
     NgIf,
+    AsyncPipe,
     RouterModule,
   ],
   template: `
@@ -59,6 +61,7 @@ import { RouterModule } from '@angular/router'
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
 
+      @if (authService.isAdmin$ | async) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add training</h3>
@@ -85,24 +88,15 @@ import { RouterModule } from '@angular/router'
             </mat-form-field>
           </div>
         </div>
-        <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <input
-                matInput
-                placeholder="Password"
-                formControlName="password"
-              />
-            </mat-form-field>
-          </div>
-        </div>
         <button type="submit" mat-flat-button (click)="create()">Create</button>
       </form>
+      }
     </div>
   `,
   providers: [provideNativeDateAdapter()],
 })
 export class TrainingsComponent {
+  readonly authService = inject(AuthService)
   trainingsData$: any[] = []
   columnNames: any[] = ['date', 'type']
   showSpinner: boolean = true
@@ -110,7 +104,6 @@ export class TrainingsComponent {
   applyForm = new FormGroup({
     date: new FormControl(''),
     type: new FormControl(''),
-    password: new FormControl(''),
   })
 
   constructor(
@@ -132,7 +125,6 @@ export class TrainingsComponent {
 
     let res = await this.trainingService.create(
       this.applyForm.value.date ?? '',
-      this.applyForm.value.password ?? '',
       attending
     )
 
@@ -142,6 +134,8 @@ export class TrainingsComponent {
       this.snackBar.open('Training was created', 'Close', {
         duration: 3000,
       })
+    } else {
+      this.snackBar.open('Could not create training. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
     }
   }
 

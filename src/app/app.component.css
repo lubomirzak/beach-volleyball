@@ -68,3 +68,23 @@
     height: 55px;
   }
 }
+
+.auth-controls {
+  float: right;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 8px 15px;
+  color: var(--mat-sys-error);
+}
+
+@media (max-width: 599px) {
+  .auth-controls {
+    float: none;
+    justify-content: flex-end;
+  }
+}

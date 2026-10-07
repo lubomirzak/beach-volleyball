@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'lubomir.zak@gmail.com';
+    }
+
+    match /players/{document} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+    match /trainings_W2026/{document} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+    match /matches_W2026/{document} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+    match /fines_W2026/{document} {
+      allow read: if true;
+      allow create: if isAdmin();
+    }
+  }
+}

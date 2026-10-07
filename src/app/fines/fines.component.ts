@@ -1,5 +1,5 @@
-import { Component } from '@angular/core'
-import { NgIf } from '@angular/common'
+import { Component, inject } from '@angular/core'
+import { AsyncPipe, NgIf } from '@angular/common'
 import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
 import { MatInputModule } from '@angular/material/input'
@@ -16,6 +16,7 @@ import { RouterModule } from '@angular/router'
 import { PlayerService } from '../player.service'
 import { MatSelectModule } from '@angular/material/select'
 import { FineService } from '../fine.service'
+import { AuthService } from '../auth.service'
 import { FineDetails } from 'src/interfaces/fineDetails'
 
 @Component({
@@ -31,6 +32,7 @@ import { FineDetails } from 'src/interfaces/fineDetails'
     MatProgressSpinnerModule,
     MatDatepickerModule,
     NgIf,
+    AsyncPipe,
     RouterModule,
   ],
   template: `
@@ -66,6 +68,7 @@ import { FineDetails } from 'src/interfaces/fineDetails'
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
 
+      @if (authService.isAdmin$ | async) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add fine</h3>
@@ -111,24 +114,15 @@ import { FineDetails } from 'src/interfaces/fineDetails'
             </mat-form-field>
           </div>
         </div>
-        <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <input
-                matInput
-                placeholder="Password"
-                formControlName="password"
-              />
-            </mat-form-field>
-          </div>
-        </div>
         <button type="submit" mat-flat-button (click)="create()">Create</button>
       </form>
+      }
     </div>
   `,
   providers: [provideNativeDateAdapter()],
 })
 export class FinesComponent {
+  readonly authService = inject(AuthService)
   finesData$: FineDetails[] = []
   trainingsData$: any[] = []
   playersData$: any[] = []
@@ -139,7 +133,6 @@ export class FinesComponent {
     amount: new FormControl(''),
     playerId: new FormControl(''),
     trainingId: new FormControl(''),
-    password: new FormControl(''),
   })
 
   constructor(
@@ -161,7 +154,6 @@ export class FinesComponent {
     let res = await this.fineService.create(
       this.applyForm.value.playerId ?? '',
       this.applyForm.value.trainingId ?? '',
-      this.applyForm.value.password ?? '',
       parseInt(this.applyForm.value.amount ?? '0')
     )
     if (res) {
@@ -169,6 +161,8 @@ export class FinesComponent {
       this.snackBar.open('Fine was created', 'Close', {
         duration: 3000,
       })
+    } else {
+      this.snackBar.open('Could not create fine. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
     }
   }
 

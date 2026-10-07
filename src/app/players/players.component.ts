@@ -168,7 +168,7 @@ export class PlayersComponent {
       }
     }
 
-    this.playersData$ = players.sort((a, b) => {
+    this.playersData$ = players.slice().sort((a, b) => {
       const aPlayed = (matchesPlayedById.get(a.id) ?? 0) > 0
       const bPlayed = (matchesPlayedById.get(b.id) ?? 0) > 0
       return Number(bPlayed) - Number(aPlayed)

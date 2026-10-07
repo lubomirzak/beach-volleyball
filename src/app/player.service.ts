@@ -20,33 +20,23 @@ export class PlayerService {
     private injector: EnvironmentInjector
   ) {}
 
-  get = async (): Promise<Player[]> => {
-    let result: Player[] = []
-
-    let playersFromCache = this.cacheService.get('players')
-    if (playersFromCache.length != 0) {
-      console.log('Returning players from cache')
-      return playersFromCache
-    }
-
+  get = (): Promise<Player[]> => this.cacheService.getOrLoad('players', async () => {
+    const result: Player[] = []
     const snapshot = await runInInjectionContext(this.injector, () =>
       getDocs(collection(this.firestore, 'players'))
     )
     snapshot.forEach((doc) => {
-      let item = doc.data()
-      let player: Player = {
+      const item = doc.data()
+      result.push({
         id: item['id'],
         firstName: item['firstName'],
         lastName: item['lastName'],
-      }
-
-      result.push(player)
+      })
     })
-
     return result.sort((a, b) =>
       a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
     )
-  }
+  })
 
   create = async (
     firstName: string,
@@ -62,6 +52,7 @@ export class PlayerService {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
         addDoc(collection(this.firestore, 'players'), player)
       )
+      this.cacheService.clear('players')
       return newMessageRef
     } catch (error) {
       console.error('Error writing new player to Firebase Database', error)

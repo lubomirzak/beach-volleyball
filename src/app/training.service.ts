@@ -6,8 +6,6 @@ import {
   addDoc,
   getDocs,
   DocumentData,
-  where,
-  query,
 } from '@angular/fire/firestore'
 import { Training } from 'src/interfaces/training'
 import { MatchService } from './match.service'
@@ -19,6 +17,7 @@ import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsSco
 import { SeasonService } from './season.service'
 import { Player } from 'src/interfaces/player'
 import { Team } from 'src/interfaces/team'
+import { CacheService } from './cache.service'
 
 @Injectable({
   providedIn: 'root',
@@ -30,53 +29,31 @@ export class TrainingService {
     private matchService: MatchService,
     private playerService: PlayerService,
     seasonService: SeasonService,
+    private cacheService: CacheService,
     private injector: EnvironmentInjector
   ) {
         this.collectionName = 'trainings' + seasonService.getSuffix();
   }
 
-  get = async (): Promise<Training[]> => {
-    let result: Training[] = []
-
-    const snapshot = await runInInjectionContext(this.injector, () =>
-      getDocs(collection(this.firestore, this.collectionName))
-    )
-    snapshot.forEach((doc) => {
-      let item = doc.data()
-      let date = new Date(item['date']['seconds'] * 1000)
-
-      let training: Training = {
-        id: item['id'],
-        date: date,
-      }
-
-      result.push(training)
+  get = (trainingCollection: string = this.collectionName): Promise<Training[]> =>
+    this.cacheService.getOrLoad(`trainings:${trainingCollection}`, async () => {
+      const result: Training[] = []
+      const snapshot = await runInInjectionContext(this.injector, () =>
+        getDocs(collection(this.firestore, trainingCollection))
+      )
+      snapshot.forEach((doc) => {
+        const item = doc.data()
+        result.push({
+          id: item['id'],
+          date: new Date(item['date']['seconds'] * 1000),
+        })
+      })
+      return result.sort((a, b) => b.date.getTime() - a.date.getTime())
     })
-
-    return result.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }
 
   getById = async (trainingId: string): Promise<Training> => {
-    let result: Training[] = []
-
-    const snapshot = await runInInjectionContext(this.injector, () => {
-      const trainingsRef = collection(this.firestore, this.collectionName)
-      const queryRef = query(trainingsRef, where('id', '==', trainingId))
-      return getDocs(queryRef)
-    })
-    snapshot.forEach((doc) => {
-      let item = doc.data()
-      let date = new Date(item['date']['seconds'] * 1000)
-
-      let training: Training = {
-        id: item['id'],
-        date: date,
-      }
-
-      result.push(training)
-    })
-
-    return result[0]
+    const trainings = await this.get()
+    return trainings.find(training => training.id === trainingId)!
   }
 
   getTrainingDetails = async (trainingId: string): Promise<TrainingDetails> => {
@@ -243,6 +220,7 @@ export class TrainingService {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
         addDoc(collection(this.firestore, this.collectionName), training)
       )
+      this.cacheService.clear(`trainings:${this.collectionName}`)
       return newMessageRef
     } catch (error) {
       console.error('Error writing new training to Firebase Database', error)

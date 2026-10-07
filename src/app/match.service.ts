@@ -6,11 +6,11 @@ import {
   addDoc,
   getDocs,
   DocumentData,
-  where,
   query,
 } from '@angular/fire/firestore'
 import { Match } from 'src/interfaces/match'
 import { SeasonService } from './season.service'
+import { CacheService } from './cache.service'
 
 @Injectable({
   providedIn: 'root',
@@ -20,67 +20,40 @@ export class MatchService {
   constructor(
     private firestore: Firestore,
     seasonService: SeasonService,
+    private cacheService: CacheService,
     private injector: EnvironmentInjector
   ) {
         this.collectionName = 'matches' + seasonService.getSuffix();
   }
 
   getMatchesForTraining = async (trainingId: string): Promise<Match[]> => {
-    let result: Match[] = []
-
-    const snapshot = await runInInjectionContext(this.injector, () => {
-      const matchesRef = collection(this.firestore, this.collectionName)
-      const queryRef = query(matchesRef, where('trainingId', '==', trainingId))
-      return getDocs(queryRef)
-    })
-    snapshot.forEach((doc) => {
-      let item = doc.data()
-
-      let match: Match = {
-        id: item['id'],
-        trainingId: trainingId,
-        team1Player1: item['team1Player1'],
-        team1Player2: item['team1Player2'],
-        team2Player1: item['team2Player1'],
-        team2Player2: item['team2Player2'],
-        team1Points: item['team1Points'],
-        team2Points: item['team2Points'],
-        created: item['created'],
-      }
-
-      result.push(match)
-    })
-
-    return result
+    const matches = await this.getAllMatches()
+    return matches.filter(match => match.trainingId === trainingId)
   }
 
-  getAllMatches = async (matchCollection: string = this.collectionName): Promise<Match[]> => {
-    let result: Match[] = []
-
-    const snapshot = await runInInjectionContext(this.injector, () => {
-      const matchesRef = collection(this.firestore, matchCollection)
-      return getDocs(query(matchesRef))
+  getAllMatches = (matchCollection: string = this.collectionName): Promise<Match[]> =>
+    this.cacheService.getOrLoad(`matches:${matchCollection}`, async () => {
+      const result: Match[] = []
+      const snapshot = await runInInjectionContext(this.injector, () => {
+        const matchesRef = collection(this.firestore, matchCollection)
+        return getDocs(query(matchesRef))
+      })
+      snapshot.forEach((doc) => {
+        const item = doc.data()
+        result.push({
+          id: item['id'],
+          trainingId: item['trainingId'] ?? 'UNKNOWN',
+          team1Player1: item['team1Player1'],
+          team1Player2: item['team1Player2'],
+          team2Player1: item['team2Player1'],
+          team2Player2: item['team2Player2'],
+          team1Points: item['team1Points'],
+          team2Points: item['team2Points'],
+          created: item['created'],
+        })
+      })
+      return result
     })
-    snapshot.forEach((doc) => {
-      let item = doc.data()
-
-      let match: Match = {
-        id: item['id'],
-        trainingId: item['trainingId'] ?? 'UNKNOWN',
-        team1Player1: item['team1Player1'],
-        team1Player2: item['team1Player2'],
-        team2Player1: item['team2Player1'],
-        team2Player2: item['team2Player2'],
-        team1Points: item['team1Points'],
-        team2Points: item['team2Points'],
-        created: item['created'],
-      }
-
-      result.push(match)
-    })
-
-    return result
-  }
 
   create = async (
     trainingId: string,
@@ -107,6 +80,7 @@ export class MatchService {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
         addDoc(collection(this.firestore, this.collectionName), match)
       )
+      this.cacheService.clear(`matches:${this.collectionName}`)
       return newMessageRef
     } catch (error) {
       console.error('Error writing new match to Firebase Database', error)

@@ -9,6 +9,7 @@ import { provideStorage, getStorage } from '@angular/fire/storage';
 import routeConfig from './routes';
 import { provideRouter } from '@angular/router';
 import {provideProtractorTestingSupport} from '@angular/platform-browser';
+import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -19,6 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideStorage(() => getStorage()),
     provideMessaging(() => getMessaging()),
     provideRouter(routeConfig),
+    provideCharts(withDefaultRegisterables()),
     provideProtractorTestingSupport()
   ],
 };

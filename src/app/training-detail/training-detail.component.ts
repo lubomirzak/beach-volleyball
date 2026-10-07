@@ -387,7 +387,7 @@ export class TrainingDetailComponent {
 
   reloadData = () => {
     this.playerService.get().then((data) => {
-      this.playersData$ = data.sort((a, b) => {
+      this.playersData$ = data.slice().sort((a, b) => {
         var fullname1 = `${b.firstName} ${b.lastName}`
         var fullname2 = `${a.firstName} ${a.lastName}`
 

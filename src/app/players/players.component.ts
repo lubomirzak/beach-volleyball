@@ -11,6 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { RouterModule } from '@angular/router'
 
 @Component({
   selector: 'app-players',
@@ -22,6 +23,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
     MatButtonModule,
     MatDividerModule,
     MatProgressSpinnerModule,
+    RouterModule,
     NgIf,
     AsyncPipe,
   ],
@@ -35,7 +37,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
       <table mat-table [dataSource]="playersData$">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+          <td mat-cell *matCellDef="let element" class="name-cell">
+            <a class="player-link" [routerLink]="['/players', element.id]">{{ element.name }}</a>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="matchesPlayed">
@@ -90,6 +94,21 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 
   .example-container > * {
     width: 100%;
+  }
+
+  .name-cell {
+    padding: 0;
+  }
+
+  .player-link {
+    display: block;
+    padding: 16px;
+    color: var(--mat-sys-primary);
+    text-decoration: none;
+  }
+
+  .player-link:hover {
+    text-decoration: underline;
   }`,
 })
 export class PlayersComponent {

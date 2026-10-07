@@ -157,7 +157,7 @@ export class PlayersComponent {
         || a.firstName.localeCompare(b.firstName)
     }).map(player => ({
       id: player.id,
-      name: `${player.firstName} ${player.lastName}`,
+      name: `${player.lastName.toLocaleUpperCase()} ${player.firstName}`,
       matchesPlayed: matchesPlayedById.get(player.id) ?? 0,
     }))
     this.showSpinner = false

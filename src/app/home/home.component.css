@@ -69,3 +69,22 @@ button {
     padding-top: 0;
   }
 }
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 8px 0 24px;
+}
+
+.page-heading h1 {
+  margin: 0;
+}
+
+.back-to-seasons.mat-mdc-outlined-button {
+  margin-left: auto;
+  color: var(--mat-sys-primary);
+  border-color: var(--mat-sys-primary);
+  background-color: var(--mat-sys-primary-container);
+}

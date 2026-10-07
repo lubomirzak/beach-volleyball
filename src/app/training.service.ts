@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core'
+import { EnvironmentInjector, Injectable, runInInjectionContext } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -29,7 +29,8 @@ export class TrainingService {
     private firestore: Firestore,
     private matchService: MatchService,
     private playerService: PlayerService,
-    seasonService: SeasonService
+    seasonService: SeasonService,
+    private injector: EnvironmentInjector
   ) {
         this.collectionName = 'trainings' + seasonService.getSuffix();
   }
@@ -37,7 +38,9 @@ export class TrainingService {
   get = async (): Promise<Training[]> => {
     let result: Training[] = []
 
-    const snapshot = await getDocs(collection(this.firestore, this.collectionName))
+    const snapshot = await runInInjectionContext(this.injector, () =>
+      getDocs(collection(this.firestore, this.collectionName))
+    )
     snapshot.forEach((doc) => {
       let item = doc.data()
       let date = new Date(item['date']['seconds'] * 1000)
@@ -56,9 +59,11 @@ export class TrainingService {
   getById = async (trainingId: string): Promise<Training> => {
     let result: Training[] = []
 
-    let trainingsRef = collection(this.firestore,  this.collectionName)
-    let queryRef = query(trainingsRef, where('id', '==', trainingId))
-    const snapshot = await getDocs(queryRef)
+    const snapshot = await runInInjectionContext(this.injector, () => {
+      const trainingsRef = collection(this.firestore, this.collectionName)
+      const queryRef = query(trainingsRef, where('id', '==', trainingId))
+      return getDocs(queryRef)
+    })
     snapshot.forEach((doc) => {
       let item = doc.data()
       let date = new Date(item['date']['seconds'] * 1000)
@@ -163,11 +168,22 @@ export class TrainingService {
     return result.sort((a,b) => b.setsPlayed - a.setsPlayed)
   }
 
-  getLeaderboard = async (): Promise<
+  getLeaderboard = async (matchCollection?: string): Promise<
     [TrainingDetailsScoreboard[], TrainingDetailsScoreboardTeam[]]
   > => {
-    const players = await this.playerService.get()
-    const matches = await this.matchService.getAllMatches()
+    const [currentPlayers, matches] = await Promise.all([
+      this.playerService.get(),
+      this.matchService.getAllMatches(matchCollection),
+    ])
+    const playersById = new Map(currentPlayers.map(player => [player.id, player] as const))
+    for (const match of matches) {
+      for (const id of [match.team1Player1, match.team1Player2, match.team2Player1, match.team2Player2]) {
+        if (!playersById.has(id)) {
+          playersById.set(id, { id, firstName: 'Unknown player', lastName: `(${id})` })
+        }
+      }
+    }
+    const players = Array.from(playersById.values())
 
     let trainingDetailMatches = matches.map((x) => {
       let player11 = players.filter((y) => y.id == x.team1Player1)[0]
@@ -196,15 +212,16 @@ export class TrainingService {
     var [trainingDetailScoreboards, trainingDetailScoreboardsTeams] =
       this.processTrainingDetailMatches(trainingDetailMatches, players)
 
-    // let's not count people who only played one training = 6 sets
-    trainingDetailScoreboards = trainingDetailScoreboards.filter(
-      (x) => x.wonSets + x.lostSets > 6
-    )
-
-    // let's not count teams which played less than / equal to 6 sets together 
-    trainingDetailScoreboardsTeams = trainingDetailScoreboardsTeams.filter(
-      (x) => x.wonSets + x.lostSets > 6
-    )
+    // Temporarily skip the minimum-match requirement for the current season.
+    // Keep the existing threshold on completed seasons.
+    if ((matchCollection ?? this.matchService.collectionName) !== this.matchService.collectionName) {
+      trainingDetailScoreboards = trainingDetailScoreboards.filter(
+        (x) => x.wonSets + x.lostSets > 6
+      )
+      trainingDetailScoreboardsTeams = trainingDetailScoreboardsTeams.filter(
+        (x) => x.wonSets + x.lostSets > 6
+      )
+    }
 
     return [
       trainingDetailScoreboards.sort(
@@ -223,9 +240,8 @@ export class TrainingService {
     }
 
     try {
-      const newMessageRef = await addDoc(
-        collection(this.firestore,  this.collectionName),
-        training
+      const newMessageRef = await runInInjectionContext(this.injector, () =>
+        addDoc(collection(this.firestore, this.collectionName), training)
       )
       return newMessageRef
     } catch (error) {

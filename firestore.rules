@@ -16,6 +16,15 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin();
     }
+    match /matches/{document} {
+      allow read: if true;
+    }
+    match /matches_W2025/{document} {
+      allow read: if true;
+    }
+    match /matches_S2026/{document} {
+      allow read: if true;
+    }
     match /matches_W2026/{document} {
       allow read: if true;
       allow create: if isAdmin();

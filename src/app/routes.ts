@@ -4,6 +4,7 @@ import { PlayersComponent } from './players/players.component'
 import { TrainingsComponent } from './trainings/trainings.component'
 import { TrainingDetailComponent } from './training-detail/training-detail.component'
 import { FinesComponent } from './fines/fines.component'
+import { HistoryComponent } from './history/history.component'
 
 const routeConfig: Routes = [
   {
@@ -25,6 +26,16 @@ const routeConfig: Routes = [
     path: 'trainingdetail/:id',
     component: TrainingDetailComponent,
     title: 'Training details',
+  },
+  {
+    path: 'history',
+    component: HistoryComponent,
+    title: 'History',
+  },
+  {
+    path: 'history/:season',
+    component: HomeComponent,
+    title: 'Season leaderboards',
   },
     {
     path: 'fines',

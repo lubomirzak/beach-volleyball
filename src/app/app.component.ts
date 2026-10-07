@@ -27,12 +27,12 @@ import { AuthService } from './auth.service'
       <div class="top-header">
         <button
           mat-icon-button
-          *ngIf="sidenav && sidenav.mode === 'over'"
-          (click)="sidenav.toggle()"
+          *ngIf="isMobile"
+          (click)="toggleMenu()"
+          [attr.aria-label]="menuOpen ? 'Close menu' : 'Open menu'"
           class="nav-button"
         >
-          <mat-icon *ngIf="sidenav && !sidenav.opened"> menu </mat-icon>
-          <mat-icon *ngIf="sidenav && sidenav.opened"> close </mat-icon>
+          <mat-icon>{{ menuOpen ? 'close' : 'menu' }}</mat-icon>
         </button>
         <a [routerLink]="['/']">
           <div class="logo">
@@ -55,12 +55,17 @@ import { AuthService } from './auth.service'
 
       <section>
         <mat-sidenav-container style="min-height: 1000px">
-          <mat-sidenav mode="side" opened>
+          <mat-sidenav
+            [mode]="isMobile ? 'over' : 'side'"
+            [opened]="!isMobile"
+            (openedChange)="menuOpen = $event"
+          >
             <mat-nav-list class="sidebar">
               <a mat-list-item [routerLink]="['/']">Home</a>
               <a mat-list-item [routerLink]="['/trainings']">Trainings</a>
               <a mat-list-item [routerLink]="['/players']">Players</a>
               <a mat-list-item [routerLink]="['/fines']">Fines</a>
+              <a mat-list-item [routerLink]="['/history']">History</a>
             </mat-nav-list>
           </mat-sidenav>
           <mat-sidenav-content>
@@ -79,6 +84,8 @@ export class AppComponent {
   routes: any = routeConfig
   readonly authService = inject(AuthService)
   authError = ''
+  isMobile = false
+  menuOpen = false
 
   async signIn() {
     this.authError = ''
@@ -113,25 +120,23 @@ export class AppComponent {
   }
 
   @ViewChild(MatSidenav)
-  sidenav!: MatSidenav
+  sidenav?: MatSidenav
 
-  constructor(private observer: BreakpointObserver, private router: Router) {}
-  ngAfterViewInit() {
+  constructor(private observer: BreakpointObserver, private router: Router) {
+    this.isMobile = this.observer.isMatched('(max-width: 800px)')
     this.observer.observe(['(max-width: 800px)']).subscribe((res) => {
-      if (res.matches) {
-        this.sidenav.mode = 'over'
-        this.sidenav.close()
-      } else {
-        this.sidenav.mode = 'side'
-        this.sidenav.open()
-      }
+      this.isMobile = res.matches
     })
     this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe((e) => {
-        if (this.sidenav.mode === 'over') {
-          this.sidenav.close()
+      .subscribe(() => {
+        if (this.isMobile) {
+          void this.sidenav?.close()
         }
       })
+  }
+
+  toggleMenu() {
+    void this.sidenav?.toggle()
   }
 }

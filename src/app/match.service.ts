@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core'
+import { EnvironmentInjector, Injectable, runInInjectionContext } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -19,7 +19,8 @@ export class MatchService {
   collectionName: string
   constructor(
     private firestore: Firestore,
-    seasonService: SeasonService
+    seasonService: SeasonService,
+    private injector: EnvironmentInjector
   ) {
         this.collectionName = 'matches' + seasonService.getSuffix();
   }
@@ -27,9 +28,11 @@ export class MatchService {
   getMatchesForTraining = async (trainingId: string): Promise<Match[]> => {
     let result: Match[] = []
 
-    let matchesRef = collection(this.firestore, this.collectionName)
-    let queryRef = query(matchesRef, where('trainingId', '==', trainingId))
-    const snapshot = await getDocs(queryRef)
+    const snapshot = await runInInjectionContext(this.injector, () => {
+      const matchesRef = collection(this.firestore, this.collectionName)
+      const queryRef = query(matchesRef, where('trainingId', '==', trainingId))
+      return getDocs(queryRef)
+    })
     snapshot.forEach((doc) => {
       let item = doc.data()
 
@@ -51,13 +54,13 @@ export class MatchService {
     return result
   }
 
-  getAllMatches = async (): Promise<Match[]> => {
+  getAllMatches = async (matchCollection: string = this.collectionName): Promise<Match[]> => {
     let result: Match[] = []
 
-    let matchesRef = collection(this.firestore,  this.collectionName)
-    let queryRef = query(matchesRef)
-
-    const snapshot = await getDocs(queryRef)
+    const snapshot = await runInInjectionContext(this.injector, () => {
+      const matchesRef = collection(this.firestore, matchCollection)
+      return getDocs(query(matchesRef))
+    })
     snapshot.forEach((doc) => {
       let item = doc.data()
 
@@ -101,9 +104,8 @@ export class MatchService {
     }
 
     try {
-      const newMessageRef = await addDoc(
-        collection(this.firestore, this.collectionName),
-        match
+      const newMessageRef = await runInInjectionContext(this.injector, () =>
+        addDoc(collection(this.firestore, this.collectionName), match)
       )
       return newMessageRef
     } catch (error) {

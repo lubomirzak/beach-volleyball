@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core'
+import { EnvironmentInjector, Injectable, runInInjectionContext } from '@angular/core'
 import {
   DocumentReference,
   Firestore,
@@ -16,7 +16,8 @@ import { CacheService } from './cache.service'
 export class PlayerService {
   constructor(
     private firestore: Firestore,
-    private cacheService: CacheService
+    private cacheService: CacheService,
+    private injector: EnvironmentInjector
   ) {}
 
   get = async (): Promise<Player[]> => {
@@ -28,7 +29,9 @@ export class PlayerService {
       return playersFromCache
     }
 
-    const snapshot = await getDocs(collection(this.firestore, 'players'))
+    const snapshot = await runInInjectionContext(this.injector, () =>
+      getDocs(collection(this.firestore, 'players'))
+    )
     snapshot.forEach((doc) => {
       let item = doc.data()
       let player: Player = {
@@ -56,9 +59,8 @@ export class PlayerService {
     }
 
     try {
-      const newMessageRef = await addDoc(
-        collection(this.firestore, 'players'),
-        player
+      const newMessageRef = await runInInjectionContext(this.injector, () =>
+        addDoc(collection(this.firestore, 'players'), player)
       )
       return newMessageRef
     } catch (error) {

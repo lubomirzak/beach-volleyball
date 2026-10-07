@@ -13,6 +13,7 @@ import { FormControl, ReactiveFormsModule, FormBuilder } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
+import { MatIconModule } from '@angular/material/icon'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { provideNativeDateAdapter } from '@angular/material/core'
@@ -32,6 +33,7 @@ import { Player } from 'src/interfaces/player'
     MatAutocompleteModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatIconModule,
     MatDividerModule,
     MatProgressSpinnerModule,
     MatDatepickerModule,
@@ -45,10 +47,16 @@ import { Player } from 'src/interfaces/player'
     </div>
 
     <div *ngIf="!showSpinner">
-      <h1>
-        Training from
-        {{ this.trainingData$ ? this.trainingData$.date.toDateString() : '' }}
-      </h1>
+      <header class="page-heading">
+        <h1>
+          Training from
+          {{ this.trainingData$ ? this.trainingData$.date.toDateString() : '' }}
+        </h1>
+        <a mat-stroked-button class="back-to-trainings" [routerLink]="['/trainings']">
+          <mat-icon>arrow_back</mat-icon>
+          All trainings
+        </a>
+      </header>
 
       <h3 style="padding-top: 30px">Results</h3>
 
@@ -223,6 +231,25 @@ import { Player } from 'src/interfaces/player'
   `,
   providers: [provideNativeDateAdapter()],
   styles: `
+    .page-heading {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      margin: 8px 0 24px;
+    }
+
+    .page-heading h1 {
+      margin: 0;
+    }
+
+    .back-to-trainings.mat-mdc-outlined-button {
+      margin-left: auto;
+      color: var(--mat-sys-primary);
+      border-color: var(--mat-sys-primary);
+      background-color: var(--mat-sys-primary-container);
+    }
+
     @media (min-width: 320px) {
         .col {
             width: 100%;

@@ -1,13 +1,10 @@
-import { Component, inject, AfterViewInit } from '@angular/core'
+import { Component, inject } from '@angular/core'
 import { CommonModule } from '@angular/common'
 import { NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
-import { MatSelectModule } from '@angular/material/select'
+import { MatAutocompleteModule } from '@angular/material/autocomplete'
 import { MatInputModule } from '@angular/material/input'
-import {
-  MatFormFieldModule,
-  FloatLabelType,
-} from '@angular/material/form-field'
+import { MatFormFieldModule } from '@angular/material/form-field'
 import { TrainingService } from '../training.service'
 import { MatchService } from '../match.service'
 import { AuthService } from '../auth.service'
@@ -21,11 +18,10 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterModule } from '@angular/router'
 import { ActivatedRoute } from '@angular/router'
-import { toSignal } from '@angular/core/rxjs-interop'
-import { map } from 'rxjs/operators'
 import { Training } from 'src/interfaces/training'
 import { Team } from 'src/interfaces/team'
 import { Match } from 'src/interfaces/match'
+import { Player } from 'src/interfaces/player'
 
 @Component({
   selector: 'app-training-detail',
@@ -33,7 +29,7 @@ import { Match } from 'src/interfaces/match'
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
+    MatAutocompleteModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
@@ -126,83 +122,77 @@ import { Match } from 'src/interfaces/match'
       <form novalidate [formGroup]="options">
         <div class="row" style="padding-top: 15px">
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel1()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 1 Player 1</mat-label>
-              <mat-select placeholder="Player 1" formControlName="team1Player1">
-                @for (item of playersData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.firstName }} {{ item.lastName }}</mat-option
-                >
+              <input matInput formControlName="team1Player1" [matAutocomplete]="team1Player1Auto" />
+              <mat-autocomplete #team1Player1Auto="matAutocomplete" [displayWith]="displayPlayer">
+                @for (item of filteredPlayers(team1Player1.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.firstName }} {{ item.lastName }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel2()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 1 Player 2</mat-label>
-              <mat-select placeholder="Player 2" formControlName="team1Player2">
-                @for (item of playersData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.firstName }} {{ item.lastName }}</mat-option
-                >
+              <input matInput formControlName="team1Player2" [matAutocomplete]="team1Player2Auto" />
+              <mat-autocomplete #team1Player2Auto="matAutocomplete" [displayWith]="displayPlayer">
+                @for (item of filteredPlayers(team1Player2.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.firstName }} {{ item.lastName }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel22()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 1</mat-label>
-              <mat-select placeholder="Team 1" formControlName="team1">
-                @for (item of teamsData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.player1Name }}, {{ item.player2Name }}</mat-option
-                >
+              <input matInput formControlName="team1" [matAutocomplete]="team1Auto" />
+              <mat-autocomplete #team1Auto="matAutocomplete" [displayWith]="displayTeam" (optionSelected)="chooseTeam(1, $event.option.value)">
+                @for (item of filteredTeams(team1.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.player1Name }}, {{ item.player2Name }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
         </div>
         <div class="row" style="padding-top: 15px">
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel3()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 2 Player 1</mat-label>
-              <mat-select placeholder="Player 1" formControlName="team2Player1">
-                @for (item of playersData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.firstName }} {{ item.lastName }}</mat-option
-                >
+              <input matInput formControlName="team2Player1" [matAutocomplete]="team2Player1Auto" />
+              <mat-autocomplete #team2Player1Auto="matAutocomplete" [displayWith]="displayPlayer">
+                @for (item of filteredPlayers(team2Player1.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.firstName }} {{ item.lastName }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel4()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 2 Player 2</mat-label>
-              <mat-select placeholder="Player 2" formControlName="team2Player2">
-                @for (item of playersData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.firstName }} {{ item.lastName }}</mat-option
-                >
+              <input matInput formControlName="team2Player2" [matAutocomplete]="team2Player2Auto" />
+              <mat-autocomplete #team2Player2Auto="matAutocomplete" [displayWith]="displayPlayer">
+                @for (item of filteredPlayers(team2Player2.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.firstName }} {{ item.lastName }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel44()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 2</mat-label>
-              <mat-select placeholder="Team 2" formControlName="team2">
-                @for (item of teamsData$; track $index ){
-                <mat-option value="{{ item.id }}"
-                  >{{ item.player1Name }}, {{ item.player2Name }}</mat-option
-                >
+              <input matInput formControlName="team2" [matAutocomplete]="team2Auto" />
+              <mat-autocomplete #team2Auto="matAutocomplete" [displayWith]="displayTeam" (optionSelected)="chooseTeam(2, $event.option.value)">
+                @for (item of filteredTeams(team2.value); track item.id) {
+                  <mat-option [value]="item.id">{{ item.player1Name }}, {{ item.player2Name }}</mat-option>
                 }
-              </mat-select>
+              </mat-autocomplete>
             </mat-form-field>
           </div>
         </div>
         <div class="row" style="padding-top: 15px">
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel5()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 1 Points</mat-label>
               <input
                 matInput
@@ -213,7 +203,7 @@ import { Match } from 'src/interfaces/match'
             </mat-form-field>
           </div>
           <div class="col">
-            <mat-form-field appearance="outline" [floatLabel]="floatLabel6()">
+            <mat-form-field appearance="outline">
               <mat-label>Team 2 Points</mat-label>
               <input
                 matInput
@@ -253,7 +243,7 @@ export class TrainingDetailComponent {
   trainingId: string
   matches$: any[] = []
   scoreboards$: any[] = []
-  playersData$: any[] = []
+  playersData$: Player[] = []
   teamsData$: Team[] = []
   trainingData$?: Training = undefined
   columnNames: any[] = ['team1', 'team2', 'score']
@@ -272,14 +262,14 @@ export class TrainingDetailComponent {
     this.reloadData()
   }
 
-  readonly team1Player1 = new FormControl('' as FloatLabelType)
-  readonly team1Player2 = new FormControl('' as FloatLabelType)
-  readonly team1 = new FormControl('' as FloatLabelType)
-  readonly team2 = new FormControl('' as FloatLabelType)
-  readonly team2Player1 = new FormControl('' as FloatLabelType)
-  readonly team2Player2 = new FormControl('' as FloatLabelType)
-  readonly team1Points = new FormControl('21' as FloatLabelType)
-  readonly team2Points = new FormControl('' as FloatLabelType)
+  readonly team1Player1 = new FormControl('')
+  readonly team1Player2 = new FormControl('')
+  readonly team1 = new FormControl('')
+  readonly team2 = new FormControl('')
+  readonly team2Player1 = new FormControl('')
+  readonly team2Player2 = new FormControl('')
+  readonly team1Points = new FormControl('21')
+  readonly team2Points = new FormControl('')
 
   readonly options = inject(FormBuilder).group({
     team1Player1: this.team1Player1,
@@ -292,65 +282,46 @@ export class TrainingDetailComponent {
     team2Points: this.team2Points,
   })
 
-  protected readonly floatLabel1 = toSignal(
-    this.team1Player1.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel2 = toSignal(
-    this.team2Player1.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel22 = toSignal(
-    this.team1.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel3 = toSignal(
-    this.team1Player2.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel4 = toSignal(
-    this.team2Player2.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel44 = toSignal(
-    this.team1.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel5 = toSignal(
-    this.team1Points.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
-  protected readonly floatLabel6 = toSignal(
-    this.team2Points.valueChanges.pipe(map((v) => v || 'auto')),
-    { initialValue: 'auto' }
-  )
+  readonly displayPlayer = (id: string | null): string => {
+    const player = this.playersData$.find(item => item.id === id)
+    return player ? `${player.firstName} ${player.lastName}` : id ?? ''
+  }
 
-  ngAfterViewInit() {
-    this.options.valueChanges.subscribe((x) => {
-      if (x.team1) {
-        let players = x.team1.split('###')
+  filteredPlayers(value: string | null): Player[] {
+    if (!value || this.playersData$.some(player => player.id === value)) {
+      return this.playersData$
+    }
+    const search = value.trim().toLocaleLowerCase()
+    return this.playersData$.filter(player =>
+      `${player.firstName} ${player.lastName}`.toLocaleLowerCase().includes(search)
+    )
+  }
 
-        this.team1Player1.setValue(players[0] as FloatLabelType, {
-          emitEvent: false,
-        })
-        this.team1Player2.setValue(players[1] as FloatLabelType, {
-          emitEvent: false,
-        })
-        this.team1.setValue('' as FloatLabelType, { emitEvent: false })
-      }
+  readonly displayTeam = (id: string | null): string => {
+    const team = this.teamsData$.find(item => item.id === id)
+    return team ? `${team.player1Name}, ${team.player2Name}` : id ?? ''
+  }
 
-      if (x.team2) {
-        let players = x.team2.split('###')
+  filteredTeams(value: string | null): Team[] {
+    if (!value || this.teamsData$.some(team => team.id === value)) {
+      return this.teamsData$
+    }
+    const search = value.trim().toLocaleLowerCase()
+    return this.teamsData$.filter(team =>
+      `${team.player1Name} ${team.player2Name}`.toLocaleLowerCase().includes(search)
+    )
+  }
 
-        this.team2Player1.setValue(players[0] as FloatLabelType, {
-          emitEvent: false,
-        })
-        this.team2Player2.setValue(players[1] as FloatLabelType, {
-          emitEvent: false,
-        })
-        this.team2.setValue('' as FloatLabelType, { emitEvent: false })
-      }
-    })
+  chooseTeam(side: 1 | 2, teamId: string): void {
+    const team = this.teamsData$.find(item => item.id === teamId)
+    if (!team) return
+
+    const player1 = side === 1 ? this.team1Player1 : this.team2Player1
+    const player2 = side === 1 ? this.team1Player2 : this.team2Player2
+    player1.setValue(team.player1Id, { emitEvent: false })
+    player2.setValue(team.player2Id, { emitEvent: false })
+    const teamControl = side === 1 ? this.team1 : this.team2
+    teamControl.setValue('', { emitEvent: false })
   }
 
   create = async () => {
@@ -359,8 +330,8 @@ export class TrainingDetailComponent {
     let t2p1 = this.options.value.team2Player1 ?? ''
     let t2p2 = this.options.value.team2Player2 ?? ''
 
-    if (t1p1 == '' || t1p2 == '' || t2p1 == '' || t2p2 == '') {
-      console.log('Something went wrong - no players selected.')
+    if ([t1p1, t1p2, t2p1, t2p2].some(id => !this.playersData$.some(player => player.id === id))) {
+      this.snackBar.open('Select all four players from the suggestions.', 'Close', { duration: 3000 })
       return
     }
 
@@ -376,7 +347,7 @@ export class TrainingDetailComponent {
     if (res) {
       this.options.reset()
       this.reloadData()
-      this.team1Points.setValue('21' as FloatLabelType, {
+      this.team1Points.setValue('21', {
         emitEvent: false,
       })
       this.snackBar.open('Match was created', 'Close', {
@@ -413,36 +384,36 @@ export class TrainingDetailComponent {
   }
 
   setTeam = (player1: string, player2: string) => {
-    let t1p1AsString = this.options.value.team1Player1 as String;
+    const t1p1 = this.team1Player1.value
 
-    if (t1p1AsString == null || t1p1AsString === '') {
-      this.team1Player1.setValue(player1 as FloatLabelType, {
+    if (!t1p1) {
+      this.team1Player1.setValue(player1, {
         emitEvent: false,
       })
-      this.team1Player2.setValue(player2 as FloatLabelType, {
+      this.team1Player2.setValue(player2, {
         emitEvent: false,
       })
     } else {
-      this.team2Player1.setValue(player1 as FloatLabelType, {
+      this.team2Player1.setValue(player1, {
         emitEvent: false,
       })
-      this.team2Player2.setValue(player2 as FloatLabelType, {
+      this.team2Player2.setValue(player2, {
         emitEvent: false,
       })
     }
   }
 
   clearTeams = () => {
-    this.team1Player1.setValue('' as FloatLabelType, {
+    this.team1Player1.setValue('', {
       emitEvent: false,
     })
-    this.team1Player2.setValue('' as FloatLabelType, {
+    this.team1Player2.setValue('', {
       emitEvent: false,
     })
-    this.team2Player1.setValue('' as FloatLabelType, {
+    this.team2Player1.setValue('', {
       emitEvent: false,
     })
-    this.team2Player2.setValue('' as FloatLabelType, {
+    this.team2Player2.setValue('', {
       emitEvent: false,
     })
   }

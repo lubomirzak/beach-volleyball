@@ -1,12 +1,10 @@
 import { Component, inject } from '@angular/core'
-import { AsyncPipe, KeyValuePipe, NgIf } from '@angular/common'
-import { Player } from 'src/interfaces/player'
-import { Attending } from 'src/interfaces/attending'
+import { AsyncPipe, NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
-import { MatSelectModule } from '@angular/material/select'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { PlayerService } from '../player.service'
+import { MatchService } from '../match.service'
 import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -20,8 +18,6 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
-    KeyValuePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
@@ -37,19 +33,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
     <div *ngIf="!showSpinner">
       <h1>Players</h1>
       <table mat-table [dataSource]="playersData$">
-        <ng-container matColumnDef="firstName">
-          <th mat-header-cell *matHeaderCellDef>Firstname</th>
-          <td mat-cell *matCellDef="let element">{{ element.firstName }}</td>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.name }}</td>
         </ng-container>
 
-        <ng-container matColumnDef="lastName">
-          <th mat-header-cell *matHeaderCellDef>Lastname</th>
-          <td mat-cell *matCellDef="let element">{{ element.lastName }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="attending">
-          <th mat-header-cell *matHeaderCellDef>Attending</th>
-          <td mat-cell *matCellDef="let element">{{ element.attending }}</td>
+        <ng-container matColumnDef="matchesPlayed">
+          <th mat-header-cell *matHeaderCellDef>Matches played</th>
+          <td mat-cell *matCellDef="let element">{{ element.matchesPlayed }}</td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
@@ -61,7 +52,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 
       <h3>Add player</h3>
 
-      <form novalidate [formGroup]="applyForm">
+      <form novalidate [formGroup]="applyForm" (ngSubmit)="submitNewPlayer()">
         <div class="row">
           <div class="col">
             <mat-form-field appearance="outline">
@@ -82,18 +73,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
             </mat-form-field>
           </div>
         </div>
-        <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <mat-select placeholder="Select" formControlName="attending">
-                @for (item of attendingOptions | keyvalue; track $index ){
-                <mat-option value="{{ item.key }}">{{ item.value }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-        </div>
-        <button type="submit" mat-flat-button (click)="submitNewPlayer()">
+        <button type="submit" mat-flat-button>
           Create
         </button>
       </form>
@@ -114,38 +94,31 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 })
 export class PlayersComponent {
   readonly authService = inject(AuthService)
-  playersData$: Player[] = []
-  columnNames: any[] = ['firstName', 'lastName', 'attending']
+  playersData$: { id: string; name: string; matchesPlayed: number }[] = []
+  columnNames: string[] = ['name', 'matchesPlayed']
   showSpinner: boolean = true
-  attendingOptions: string[] = []
   applyForm = new FormGroup({
     firstName: new FormControl(''),
     lastName: new FormControl(''),
-    attending: new FormControl(''),
   })
 
   constructor(
     private snackBar: MatSnackBar,
-    private playerService: PlayerService
+    private playerService: PlayerService,
+    private matchService: MatchService
   ) {
     this.reloadData()
   }
 
-  ngOnInit() {
-    this.attendingOptions = Object.keys(Attending).filter((v) =>
-      isNaN(Number(v))
-    )
-  }
-
   submitNewPlayer = async () => {
-    let attendingInt = this.applyForm.value.attending ?? '3'
-    let attending: Attending = Attending[attendingInt as keyof typeof Attending]
+    const firstName = this.applyForm.controls.firstName.value?.trim() ?? ''
+    const lastName = this.applyForm.controls.lastName.value?.trim() ?? ''
+    if (!firstName || !lastName) {
+      this.snackBar.open('Enter first and last name.', 'Close', { duration: 3000 })
+      return
+    }
 
-    let res = await this.playerService.create(
-      this.applyForm.value.firstName ?? '',
-      this.applyForm.value.lastName ?? '',
-      attending
-    )
+    let res = await this.playerService.create(firstName, lastName)
 
     if (res) {
       this.applyForm.reset()
@@ -158,10 +131,35 @@ export class PlayersComponent {
     }
   }
 
-  reloadData = () => {
-    this.playerService.get().then((data) => {
-      this.playersData$ = data
-      this.showSpinner = false
-    })
+  reloadData = async () => {
+    const [players, matches] = await Promise.all([
+      this.playerService.get(),
+      this.matchService.getAllMatches(),
+    ])
+    const matchesPlayedById = new Map<string, number>()
+    for (const match of matches) {
+      const playerIds = new Set([
+        match.team1Player1,
+        match.team1Player2,
+        match.team2Player1,
+        match.team2Player2,
+      ])
+      for (const id of playerIds) {
+        matchesPlayedById.set(id, (matchesPlayedById.get(id) ?? 0) + 1)
+      }
+    }
+
+    this.playersData$ = players.sort((a, b) => {
+      const aPlayed = (matchesPlayedById.get(a.id) ?? 0) > 0
+      const bPlayed = (matchesPlayedById.get(b.id) ?? 0) > 0
+      return Number(bPlayed) - Number(aPlayed)
+        || a.lastName.localeCompare(b.lastName)
+        || a.firstName.localeCompare(b.firstName)
+    }).map(player => ({
+      id: player.id,
+      name: `${player.firstName} ${player.lastName}`,
+      matchesPlayed: matchesPlayedById.get(player.id) ?? 0,
+    }))
+    this.showSpinner = false
   }
 }

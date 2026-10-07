@@ -1,6 +1,5 @@
 import { Component, inject } from '@angular/core'
 import { AsyncPipe, NgIf } from '@angular/common'
-import { Attending } from 'src/interfaces/attending'
 import { MatTableModule } from '@angular/material/table'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -128,7 +127,6 @@ export class FinesComponent {
   playersData$: any[] = []
   columnNames: any[] = ['trainingDate', 'playerName', 'amount']
   showSpinner: boolean = true
-  attendingOptions: string[] = []
   applyForm = new FormGroup({
     amount: new FormControl(''),
     playerId: new FormControl(''),
@@ -142,12 +140,6 @@ export class FinesComponent {
     private snackBar: MatSnackBar
   ) {
     this.reloadData()
-  }
-
-  ngOnInit() {
-    this.attendingOptions = Object.keys(Attending).filter(
-      (v) => isNaN(Number(v)) && (v == 'Thursday' || v == 'Tuesday')
-    )
   }
 
   create = async () => {
@@ -180,7 +172,6 @@ export class FinesComponent {
       this.trainingsData$ = data.map((x) => {
         return {
           id: x.id,
-          type: x.type,
           date: x.date,
           dateFormatted: x.date.toDateString(),
         }

@@ -9,7 +9,6 @@ import {
   where,
   query,
 } from '@angular/fire/firestore'
-import { Attending } from 'src/interfaces/attending'
 import { Training } from 'src/interfaces/training'
 import { MatchService } from './match.service'
 import { PlayerService } from './player.service'
@@ -46,7 +45,6 @@ export class TrainingService {
       let training: Training = {
         id: item['id'],
         date: date,
-        type: item['type'],
       }
 
       result.push(training)
@@ -68,7 +66,6 @@ export class TrainingService {
       let training: Training = {
         id: item['id'],
         date: date,
-        type: item['type'],
       }
 
       result.push(training)
@@ -116,7 +113,6 @@ export class TrainingService {
       scoreboards: trainingDetailScoreboards.sort(
         (a, b) => b.wonSets - a.wonSets
       ),
-      type: training.type,
     }
   }
 
@@ -220,23 +216,16 @@ export class TrainingService {
     ]
   }
 
-  create = async (
-    date: string,
-    type: Attending
-  ): Promise<void | DocumentReference<DocumentData>> => {
-    const timestamp = Date.parse(date)
-    const dateToBeSaved = new Date(timestamp)
-
-    const player: Training = {
+  create = async (date: Date): Promise<void | DocumentReference<DocumentData>> => {
+    const training: Training = {
       id: this.generateGUID(),
-      type: type,
-      date: dateToBeSaved,
+      date,
     }
 
     try {
       const newMessageRef = await addDoc(
         collection(this.firestore,  this.collectionName),
-        player
+        training
       )
       return newMessageRef
     } catch (error) {

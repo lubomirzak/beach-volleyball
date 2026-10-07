@@ -63,7 +63,7 @@ export class MatchService {
 
       let match: Match = {
         id: item['id'],
-        trainingId: 'UNKNOWN',
+        trainingId: item['trainingId'] ?? 'UNKNOWN',
         team1Player1: item['team1Player1'],
         team1Player2: item['team1Player2'],
         team2Player1: item['team2Player1'],

@@ -8,7 +8,6 @@ import {
   DocumentData,
 } from '@angular/fire/firestore'
 import { Player } from 'src/interfaces/player'
-import { Attending } from 'src/interfaces/attending'
 import { CacheService } from './cache.service'
 
 @Injectable({
@@ -34,7 +33,6 @@ export class PlayerService {
       let item = doc.data()
       let player: Player = {
         id: item['id'],
-        attending: item['attending'],
         firstName: item['firstName'],
         lastName: item['lastName'],
       }
@@ -43,20 +41,18 @@ export class PlayerService {
     })
 
     return result.sort((a, b) =>
-      a.attending.toString().localeCompare(b.attending.toString())
+      a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName)
     )
   }
 
   create = async (
     firstName: string,
-    lastName: string,
-    attending: Attending
+    lastName: string
   ): Promise<void | DocumentReference<DocumentData>> => {
     const player: Player = {
       id: this.generateGUID(),
       firstName: firstName,
       lastName: lastName,
-      attending: attending,
     }
 
     try {

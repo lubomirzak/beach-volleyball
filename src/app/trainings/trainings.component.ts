@@ -1,11 +1,11 @@
 import { Component, inject } from '@angular/core'
-import { AsyncPipe, KeyValuePipe, NgIf } from '@angular/common'
-import { Attending } from 'src/interfaces/attending'
+import { AsyncPipe, NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
-import { MatSelectModule } from '@angular/material/select'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { TrainingService } from '../training.service'
+import { MatchService } from '../match.service'
+import { PlayerService } from '../player.service'
 import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
@@ -15,6 +15,7 @@ import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterModule } from '@angular/router'
+import { Match } from 'src/interfaces/match'
 
 @Component({
   selector: 'app-trainings',
@@ -22,8 +23,6 @@ import { RouterModule } from '@angular/router'
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule,
-    KeyValuePipe,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
@@ -52,9 +51,14 @@ import { RouterModule } from '@angular/router'
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="type">
-          <th mat-header-cell *matHeaderCellDef>Type</th>
-          <td mat-cell *matCellDef="let element">{{ element.type }}</td>
+        <ng-container matColumnDef="players">
+          <th mat-header-cell *matHeaderCellDef>Players</th>
+          <td mat-cell *matCellDef="let element">{{ element.players }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="matchesPlayed">
+          <th mat-header-cell *matHeaderCellDef>Matches played</th>
+          <td mat-cell *matCellDef="let element">{{ element.matchesPlayed }}</td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
@@ -65,7 +69,7 @@ import { RouterModule } from '@angular/router'
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add training</h3>
-      <form novalidate [formGroup]="applyForm">
+      <form novalidate [formGroup]="applyForm" (ngSubmit)="create()">
         <div class="row">
           <mat-form-field>
             <mat-label>Choose a date</mat-label>
@@ -77,18 +81,7 @@ import { RouterModule } from '@angular/router'
             <mat-datepicker #picker></mat-datepicker>
           </mat-form-field>
         </div>
-        <div class="row" style="padding-top: 15px">
-          <div class="col">
-            <mat-form-field appearance="outline">
-              <mat-select placeholder="Select type" formControlName="type">
-                @for (item of attendingOptions | keyvalue; track $index ){
-                <mat-option value="{{ item.key }}">{{ item.value }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          </div>
-        </div>
-        <button type="submit" mat-flat-button (click)="create()">Create</button>
+        <button type="submit" mat-flat-button>Create</button>
       </form>
       }
     </div>
@@ -97,36 +90,30 @@ import { RouterModule } from '@angular/router'
 })
 export class TrainingsComponent {
   readonly authService = inject(AuthService)
-  trainingsData$: any[] = []
-  columnNames: any[] = ['date', 'type']
+  trainingsData$: { id: string; date: Date; players: string; matchesPlayed: number }[] = []
+  columnNames: string[] = ['date', 'players', 'matchesPlayed']
   showSpinner: boolean = true
-  attendingOptions: string[] = []
   applyForm = new FormGroup({
-    date: new FormControl(''),
-    type: new FormControl(''),
+    date: new FormControl<Date | null>(null),
   })
 
   constructor(
     private trainingService: TrainingService,
+    private matchService: MatchService,
+    private playerService: PlayerService,
     private snackBar: MatSnackBar
   ) {
     this.reloadData()
   }
 
-  ngOnInit() {
-    this.attendingOptions = Object.keys(Attending).filter(
-      (v) => isNaN(Number(v)) && (v == 'Thursday' || v == 'Tuesday')
-    )
-  }
-
   create = async () => {
-    let attendingInt = this.applyForm.value.type ?? '0'
-    let attending: Attending = Attending[attendingInt as keyof typeof Attending]
+    const date = this.applyForm.controls.date.value
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+      this.snackBar.open('Choose a valid date.', 'Close', { duration: 3000 })
+      return
+    }
 
-    let res = await this.trainingService.create(
-      this.applyForm.value.date ?? '',
-      attending
-    )
+    let res = await this.trainingService.create(date)
 
     if (res) {
       this.applyForm.reset()
@@ -139,16 +126,38 @@ export class TrainingsComponent {
     }
   }
 
-  reloadData = () => {
-    this.trainingService.get().then((data) => {
-      this.trainingsData$ = data.map((x) => {
-        return {
-          id: x.id,
-          type: x.type,
-          date: x.date,
-        }
-      })
-      this.showSpinner = false
+  reloadData = async () => {
+    const [trainings, matches, players] = await Promise.all([
+      this.trainingService.get(),
+      this.matchService.getAllMatches(),
+      this.playerService.get(),
+    ])
+    const matchesByTraining = new Map<string, Match[]>()
+    for (const match of matches) {
+      const trainingMatches = matchesByTraining.get(match.trainingId) ?? []
+      trainingMatches.push(match)
+      matchesByTraining.set(match.trainingId, trainingMatches)
+    }
+    const lastNameById = new Map(players.map(player => [player.id, player.lastName] as const))
+
+    this.trainingsData$ = trainings.map(training => {
+      const trainingMatches = matchesByTraining.get(training.id) ?? []
+      const playerIds = new Set(trainingMatches.flatMap(match => [
+        match.team1Player1,
+        match.team1Player2,
+        match.team2Player1,
+        match.team2Player2,
+      ]))
+      const lastNames = Array.from(playerIds, id => lastNameById.get(id) ?? 'Unknown player')
+        .sort((a, b) => a.localeCompare(b))
+
+      return {
+        id: training.id,
+        date: training.date,
+        players: lastNames.join(', ') || '—',
+        matchesPlayed: trainingMatches.length,
+      }
     })
+    this.showSpinner = false
   }
 }

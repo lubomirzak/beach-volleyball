@@ -420,14 +420,29 @@ export class TrainingDetailComponent {
       return
     }
 
+    if (new Set([t1p1, t1p2, t2p1, t2p2]).size !== 4) {
+      this.snackBar.open('Choose four different players.', 'Close', { duration: 3000 })
+      return
+    }
+
+    const team1ScoreText = this.team1Points.value?.trim() ?? ''
+    const team2ScoreText = this.team2Points.value?.trim() ?? ''
+    const team1Score = Number(team1ScoreText)
+    const team2Score = Number(team2ScoreText)
+    if (!/^\d+$/.test(team1ScoreText) || !/^\d+$/.test(team2ScoreText)
+      || team1Score === team2Score) {
+      this.snackBar.open('Enter two different, non-negative whole-number scores.', 'Close', { duration: 4000 })
+      return
+    }
+
     let res = await this.matchService.create(
       this.trainingId,
       t1p1,
       t1p2,
       t2p1,
       t2p2,
-      parseInt(this.options.value.team1Points ?? '0'),
-      parseInt(this.options.value.team2Points ?? '0')
+      team1Score,
+      team2Score
     )
     if (res) {
       this.options.reset()

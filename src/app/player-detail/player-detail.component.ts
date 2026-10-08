@@ -13,6 +13,7 @@ import { Match } from 'src/interfaces/match'
 import { Training } from 'src/interfaces/training'
 import { HISTORY_SEASONS } from '../history/seasons'
 import { MatchService } from '../match.service'
+import { didPlayerWin, isDecidedMatch, partnerIdForMatch } from '../match-statistics'
 import { PlayerService } from '../player.service'
 import { TrainingService } from '../training.service'
 
@@ -442,6 +443,7 @@ export class PlayerDetailComponent {
         const partners = new Map<string, MatchTotals>()
 
         for (const match of matchesBySeason[index]) {
+          if (!isDecidedMatch(match)) continue
           const partnerId = this.partnerInMatch(match, playerId)
           if (!partnerId) continue
 
@@ -467,7 +469,7 @@ export class PlayerDetailComponent {
           ratio: this.ratio(partnerTotals),
         }))
         rows.sort((a, b) =>
-          Number(b.ratio) - Number(a.ratio) || a.partner.localeCompare(b.partner)
+          b.wins / b.matches - a.wins / a.matches || a.partner.localeCompare(b.partner)
         )
         partnerSeasons.push({ label: season.label, rows })
         seasonTrends.push({
@@ -531,6 +533,7 @@ export class PlayerDetailComponent {
     const trainingDates = new Map(trainings.map(training => [training.id, training.date] as const))
     const summaries = new Map<string, TrainingSummary>()
     for (const match of matches) {
+      if (!isDecidedMatch(match)) continue
       const partnerId = this.partnerInMatch(match, playerId)
       if (!partnerId) continue
       const id = match.trainingId && match.trainingId !== 'UNKNOWN' ? match.trainingId : match.id
@@ -576,16 +579,11 @@ export class PlayerDetailComponent {
   }
 
   private partnerInMatch(match: Match, playerId: string): string | null {
-    if (match.team1Player1 === playerId) return match.team1Player2
-    if (match.team1Player2 === playerId) return match.team1Player1
-    if (match.team2Player1 === playerId) return match.team2Player2
-    if (match.team2Player2 === playerId) return match.team2Player1
-    return null
+    return partnerIdForMatch(match, playerId)
   }
 
   private wonMatch(match: Match, playerId: string): boolean {
-    const onTeam1 = match.team1Player1 === playerId || match.team1Player2 === playerId
-    return onTeam1 ? match.team1Points > match.team2Points : match.team2Points > match.team1Points
+    return didPlayerWin(match, playerId)
   }
 
   private partnerName(playersById: Map<string, Player>, partnerId: string): string {

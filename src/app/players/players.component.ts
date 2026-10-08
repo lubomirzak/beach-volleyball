@@ -5,6 +5,8 @@ import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { PlayerService } from '../player.service'
 import { MatchService } from '../match.service'
+import { isDecidedMatch } from '../match-statistics'
+import { HISTORY_SEASONS } from '../history/seasons'
 import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -42,9 +44,14 @@ import { RouterModule } from '@angular/router'
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="matchesPlayed">
-          <th mat-header-cell *matHeaderCellDef>Matches played</th>
-          <td mat-cell *matCellDef="let element">{{ element.matchesPlayed }}</td>
+        <ng-container matColumnDef="matchesThisSeason">
+          <th mat-header-cell *matHeaderCellDef>Matches this season</th>
+          <td mat-cell *matCellDef="let element">{{ element.matchesThisSeason }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="totalMatches">
+          <th mat-header-cell *matHeaderCellDef>Total matches</th>
+          <td mat-cell *matCellDef="let element">{{ element.totalMatches }}</td>
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
@@ -113,8 +120,8 @@ import { RouterModule } from '@angular/router'
 })
 export class PlayersComponent {
   readonly authService = inject(AuthService)
-  playersData$: { id: string; name: string; matchesPlayed: number }[] = []
-  columnNames: string[] = ['name', 'matchesPlayed']
+  playersData$: { id: string; name: string; matchesThisSeason: number; totalMatches: number }[] = []
+  columnNames: string[] = ['name', 'matchesThisSeason', 'totalMatches']
   showSpinner: boolean = true
   applyForm = new FormGroup({
     firstName: new FormControl(''),
@@ -151,33 +158,38 @@ export class PlayersComponent {
   }
 
   reloadData = async () => {
-    const [players, matches] = await Promise.all([
+    const [players, matchesBySeason] = await Promise.all([
       this.playerService.get(),
-      this.matchService.getAllMatches(),
+      Promise.all(HISTORY_SEASONS.map(season => this.matchService.getAllMatches(season.slug))),
     ])
-    const matchesPlayedById = new Map<string, number>()
-    for (const match of matches) {
-      const playerIds = new Set([
-        match.team1Player1,
-        match.team1Player2,
-        match.team2Player1,
-        match.team2Player2,
-      ])
-      for (const id of playerIds) {
-        matchesPlayedById.set(id, (matchesPlayedById.get(id) ?? 0) + 1)
+    const matchesThisSeasonById = new Map<string, number>()
+    const totalMatchesById = new Map<string, number>()
+    matchesBySeason.forEach((matches, seasonIndex) => {
+      for (const match of matches) {
+        if (!isDecidedMatch(match)) continue
+        const playerIds = new Set([
+          match.team1Player1,
+          match.team1Player2,
+          match.team2Player1,
+          match.team2Player2,
+        ])
+        for (const id of playerIds) {
+          totalMatchesById.set(id, (totalMatchesById.get(id) ?? 0) + 1)
+          if (HISTORY_SEASONS[seasonIndex].current) {
+            matchesThisSeasonById.set(id, (matchesThisSeasonById.get(id) ?? 0) + 1)
+          }
+        }
       }
-    }
+    })
 
     this.playersData$ = players.slice().sort((a, b) => {
-      const aPlayed = (matchesPlayedById.get(a.id) ?? 0) > 0
-      const bPlayed = (matchesPlayedById.get(b.id) ?? 0) > 0
-      return Number(bPlayed) - Number(aPlayed)
-        || a.lastName.localeCompare(b.lastName)
+      return a.lastName.localeCompare(b.lastName)
         || a.firstName.localeCompare(b.firstName)
     }).map(player => ({
       id: player.id,
       name: `${player.lastName.toLocaleUpperCase()} ${player.firstName}`,
-      matchesPlayed: matchesPlayedById.get(player.id) ?? 0,
+      matchesThisSeason: matchesThisSeasonById.get(player.id) ?? 0,
+      totalMatches: totalMatchesById.get(player.id) ?? 0,
     }))
     this.showSpinner = false
   }

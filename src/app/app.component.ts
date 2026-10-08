@@ -5,6 +5,7 @@ import { MatListModule, MatNavList } from '@angular/material/list'
 import { MatButtonModule } from '@angular/material/button'
 import { BreakpointObserver } from '@angular/cdk/layout'
 import { MatIconModule } from '@angular/material/icon'
+import { MatDividerModule } from '@angular/material/divider'
 import routeConfig from './routes'
 import { filter } from 'rxjs'
 import { CommonModule } from '@angular/common'
@@ -20,6 +21,7 @@ import { AuthService } from './auth.service'
     MatNavList,
     MatListModule,
     MatButtonModule,
+    MatDividerModule,
     CommonModule,
   ],
   template: `
@@ -61,6 +63,7 @@ import { AuthService } from './auth.service'
             (openedChange)="menuOpen = $event"
           >
             <mat-nav-list class="sidebar">
+              <div class="sidebar-section-label">Current season</div>
               <a mat-list-item [routerLink]="['/']">Home</a>
               <a mat-list-item [routerLink]="['/trainings']">Trainings</a>
               <a mat-list-item [routerLink]="['/players']">Players</a>
@@ -68,6 +71,7 @@ import { AuthService } from './auth.service'
               @if (authService.isAdmin$ | async) {
                 <a mat-list-item [routerLink]="['/substitute-payments']">Substitute payments</a>
               }
+              <mat-divider class="sidebar-divider"></mat-divider>
               <a mat-list-item [routerLink]="['/history']">History</a>
             </mat-nav-list>
           </mat-sidenav>

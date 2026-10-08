@@ -18,6 +18,7 @@ import { MatchService } from '../match.service'
 import { didPlayerWin, isDecidedMatch, partnerIdForMatch } from '../match-statistics'
 import { PlayerService } from '../player.service'
 import { TrainingService } from '../training.service'
+import { OpponentRankings, OpponentRecord, rankOpponents } from '../opponent-statistics'
 
 interface SeasonRatio {
   season: string
@@ -31,12 +32,6 @@ interface PartnerRatio {
   matches: number
   wins: number
   ratio: string
-}
-
-interface PartnerSeason {
-  label: string
-  rows: PartnerRatio[]
-  sort: Sort
 }
 
 interface MatchTotals {
@@ -68,6 +63,25 @@ interface SeasonTrend {
   points: TrainingPoint[]
 }
 
+interface OpponentCard {
+  title: string
+  records: OpponentRecord[]
+  emptyMessage: string
+}
+
+interface OpponentPeriod {
+  label: string
+  cards: OpponentCard[]
+  hasRecords: boolean
+  minimumMatches: number
+}
+
+interface MatchupPeriod extends OpponentPeriod {
+  rows: PartnerRatio[]
+  sort: Sort
+  showPartners: boolean
+}
+
 type ChartMode = 'running' | 'training'
 
 @Component({
@@ -87,8 +101,6 @@ type ChartMode = 'running' | 'training'
     } @else if (error) {
       <p role="alert">{{ error }}</p>
     } @else {
-      <p class="ratio-note">Ratio is wins divided by matches played.</p>
-
       <section class="table-section">
         <h2>By season</h2>
         <div class="table-scroll">
@@ -157,57 +169,85 @@ type ChartMode = 'running' | 'training'
         }
       </section>
 
-      <section class="table-section">
-        <h2>With partners</h2>
-        @for (season of partnerSeasons; track season.label) {
-          <div class="partner-season">
-            <h3>{{ season.label }}</h3>
-            @if (season.rows.length === 0) {
-              <p>No partner matches this season.</p>
-            } @else {
-              <div class="table-scroll partner-table-scroll">
-                <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortPartners(season, $event)" class="partner-table" [dataSource]="season.rows">
-                  <ng-container matColumnDef="partner">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Partner</th>
-                    <td mat-cell *matCellDef="let row">{{ row.partner }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="matches">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches played</th>
-                    <td mat-cell *matCellDef="let row">{{ row.matches }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="wins">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Wins</th>
-                    <td mat-cell *matCellDef="let row">{{ row.wins }}</td>
-                  </ng-container>
-                  <ng-container matColumnDef="ratio">
-                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Ratio</th>
-                    <td mat-cell *matCellDef="let row">{{ row.ratio }}</td>
-                  </ng-container>
-                  <tr mat-header-row *matHeaderRowDef="partnerColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: partnerColumns"></tr>
-                </table>
-              </div>
-              <div class="partner-cards">
-                @for (row of season.rows; track $index) {
-                  <article class="partner-card">
-                    <h4>{{ row.partner }}</h4>
-                    <dl>
-                      <div>
-                        <dt>Matches played</dt>
-                        <dd>{{ row.matches }}</dd>
-                      </div>
-                      <div>
-                        <dt>Wins</dt>
-                        <dd>{{ row.wins }}</dd>
-                      </div>
-                      <div>
-                        <dt>Ratio</dt>
-                        <dd>{{ row.ratio }}</dd>
-                      </div>
-                    </dl>
+      <section class="table-section" aria-labelledby="matchups-title">
+        <h2 id="matchups-title">Matchups</h2>
+        <p class="chart-note">Up to 3 highest and lowest win ratios. All seasons requires 5 matches; each season requires 3.</p>
+        @for (period of matchupPeriods; track period.label) {
+          <div class="matchup-period">
+            <h3>{{ period.label }}</h3>
+            <h4>Against opponents</h4>
+            @if (period.hasRecords) {
+              <div class="opponent-cards">
+                @for (card of period.cards; track card.title) {
+                  <article class="opponent-card">
+                    <h4 style="margin: 0 0 10px">{{ card.title }}</h4>
+                    @if (card.records.length) {
+                      <ol style="margin: 0; padding-left: 24px">
+                        @for (record of card.records; track $index) {
+                          <li>
+                            <strong>{{ opponentName(record) }}</strong>
+                            <div class="chart-note">{{ record.wins }} wins / {{ record.matches }} matches · Ratio {{ (record.wins / record.matches).toFixed(2) }}</div>
+                          </li>
+                        }
+                      </ol>
+                    } @else {
+                      <p class="chart-note">{{ card.emptyMessage }}</p>
+                    }
                   </article>
                 }
               </div>
+            } @else {
+              <p>No opponents with {{ period.minimumMatches }} matches in this period.</p>
+            }
+            @if (period.showPartners) {
+              <h4>With partners</h4>
+              @if (period.rows.length === 0) {
+                <p>No partner matches this season.</p>
+              } @else {
+                <div class="table-scroll partner-table-scroll">
+                  <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortPartners(period, $event)" class="partner-table" [dataSource]="period.rows">
+                    <ng-container matColumnDef="partner">
+                      <th mat-header-cell *matHeaderCellDef mat-sort-header>Partner</th>
+                      <td mat-cell *matCellDef="let row">{{ row.partner }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="matches">
+                      <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches played</th>
+                      <td mat-cell *matCellDef="let row">{{ row.matches }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="wins">
+                      <th mat-header-cell *matHeaderCellDef mat-sort-header>Wins</th>
+                      <td mat-cell *matCellDef="let row">{{ row.wins }}</td>
+                    </ng-container>
+                    <ng-container matColumnDef="ratio">
+                      <th mat-header-cell *matHeaderCellDef mat-sort-header>Ratio</th>
+                      <td mat-cell *matCellDef="let row">{{ row.ratio }}</td>
+                    </ng-container>
+                    <tr mat-header-row *matHeaderRowDef="partnerColumns"></tr>
+                    <tr mat-row *matRowDef="let row; columns: partnerColumns"></tr>
+                  </table>
+                </div>
+                <div class="partner-cards">
+                  @for (row of period.rows; track $index) {
+                    <article class="partner-card">
+                      <h4>{{ row.partner }}</h4>
+                      <dl>
+                        <div>
+                          <dt>Matches played</dt>
+                          <dd>{{ row.matches }}</dd>
+                        </div>
+                        <div>
+                          <dt>Wins</dt>
+                          <dd>{{ row.wins }}</dd>
+                        </div>
+                        <div>
+                          <dt>Ratio</dt>
+                          <dd>{{ row.ratio }}</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  }
+                </div>
+              }
             }
           </div>
         }
@@ -232,10 +272,6 @@ type ChartMode = 'running' | 'training'
       color: var(--mat-sys-primary);
       border-color: var(--mat-sys-primary);
       background-color: var(--mat-sys-primary-container);
-    }
-
-    .ratio-note {
-      color: var(--mat-sys-on-surface-variant);
     }
 
     .table-section {
@@ -279,13 +315,35 @@ type ChartMode = 'running' | 'training'
       font-size: 0.875rem;
     }
 
+    .opponent-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .opponent-card li + li { padding-top: 12px; }
+
+    .opponent-card {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low);
+    }
+
+
     .table-scroll {
       overflow-x: auto;
     }
 
-    .partner-season {
+    .matchup-period {
       margin-top: 24px;
       container-type: inline-size;
+    }
+
+    .matchup-period + .matchup-period {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+      padding-top: 1em;
     }
 
     table {
@@ -354,8 +412,9 @@ export class PlayerDetailComponent {
   loading = true
   error = ''
   seasonRows: SeasonRatio[] = []
-  partnerSeasons: PartnerSeason[] = []
   seasonTrends: SeasonTrend[] = []
+  matchupPeriods: MatchupPeriod[] = []
+  private playersById = new Map<string, Player>()
   selectedChartMode: ChartMode = 'running'
   selectedChartSeason = ''
   selectedChartSeasonLabel = ''
@@ -404,7 +463,7 @@ export class PlayerDetailComponent {
       column === 'season' ? this.seasonOrder(row.season) : this.ratioRowValue(row, column))
   }
 
-  sortPartners(season: PartnerSeason, sort: Sort): void {
+  sortPartners(season: MatchupPeriod, sort: Sort): void {
     season.sort = sort
     season.rows = sortTableRows(season.rows, sort, (row, column) =>
       this.ratioRowValue(row, column))
@@ -450,6 +509,7 @@ export class PlayerDetailComponent {
 
       this.playerName = this.formatName(player)
       const playersById = new Map(players.map(item => [item.id, item] as const))
+      this.playersById = playersById
       const matchesBySeason = await Promise.all(HISTORY_SEASONS.map(season =>
         this.matchService.getAllMatches(season.slug)
       ))
@@ -464,7 +524,10 @@ export class PlayerDetailComponent {
       }))
 
       const seasonRows: SeasonRatio[] = []
-      const partnerSeasons: PartnerSeason[] = []
+      const matchupPeriods: MatchupPeriod[] = [{
+        ...this.opponentPeriod('All seasons', matchesBySeason.flat(), playerId, 5),
+        rows: [], sort: { active: '', direction: '' }, showPartners: false,
+      }]
       const seasonTrends: SeasonTrend[] = []
       HISTORY_SEASONS.forEach((season, index) => {
         const totals: MatchTotals = { matches: 0, wins: 0 }
@@ -499,7 +562,10 @@ export class PlayerDetailComponent {
         rows.sort((a, b) =>
           b.wins / b.matches - a.wins / a.matches || a.partner.localeCompare(b.partner)
         )
-        partnerSeasons.push({ label: season.label, rows, sort: { active: '', direction: '' } })
+        matchupPeriods.push({
+          ...this.opponentPeriod(season.label, matchesBySeason[index], playerId),
+          rows, sort: { active: '', direction: '' }, showPartners: true,
+        })
         seasonTrends.push({
           slug: season.slug,
           label: season.label,
@@ -509,7 +575,7 @@ export class PlayerDetailComponent {
 
       this.seasonRows = sortTableRows(seasonRows, this.seasonSort, (row, column) =>
         column === 'season' ? this.seasonOrder(row.season) : this.ratioRowValue(row, column))
-      this.partnerSeasons = partnerSeasons
+      this.matchupPeriods = matchupPeriods
       this.seasonTrends = seasonTrends
       this.selectChartSeason(seasonTrends.find(season => season.points.length > 0)?.slug ?? seasonTrends[0]?.slug ?? '')
     } catch (error) {
@@ -527,6 +593,31 @@ export class PlayerDetailComponent {
     this.chartPoints = season?.points ?? []
     this.hasEstimatedDates = this.chartPoints.some(point => point.dateEstimated)
     this.updateChartData()
+  }
+
+  private opponentPeriod(label: string, matches: Match[], playerId: string, minimumMatches = 3): OpponentPeriod {
+    const cards = this.opponentCards(rankOpponents(matches, playerId, minimumMatches), minimumMatches)
+    return { label, cards, minimumMatches, hasRecords: cards.some(card => card.records.length > 0) }
+  }
+
+  private opponentCards(rankings: OpponentRankings, minimumMatches: number): OpponentCard[] {
+    return [
+      { title: 'Best records vs players', records: rankings?.bestIndividuals ?? [],
+        emptyMessage: `No player with ${minimumMatches} matches yet.` },
+      { title: 'Toughest players', records: rankings?.toughestIndividuals ?? [],
+        emptyMessage: `No player with ${minimumMatches} matches yet.` },
+      { title: 'Best records vs pairs', records: rankings?.bestPairs ?? [],
+        emptyMessage: `No pair with ${minimumMatches} matches yet.` },
+      { title: 'Toughest pairs', records: rankings?.toughestPairs ?? [],
+        emptyMessage: `No pair with ${minimumMatches} matches yet.` },
+    ]
+  }
+
+  opponentName(record: OpponentRecord): string {
+    return record.ids.map(id => {
+      const player = this.playersById.get(id)
+      return player ? this.formatName(player) : `Unknown player (${id})`
+    }).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })).join(', ')
   }
 
   selectChartMode(mode: ChartMode): void {

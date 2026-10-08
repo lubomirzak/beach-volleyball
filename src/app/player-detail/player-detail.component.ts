@@ -64,6 +64,8 @@ interface SeasonTrend {
   points: TrainingPoint[]
 }
 
+type ChartMode = 'running' | 'training'
+
 @Component({
   selector: 'app-player-detail',
   imports: [BaseChartDirective, MatButtonModule, MatFormFieldModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule, MatTableModule, RouterModule],
@@ -112,23 +114,39 @@ interface SeasonTrend {
       <section class="table-section" aria-labelledby="ratio-chart-title">
         <div class="chart-heading">
           <h2 id="ratio-chart-title">Ratio over trainings</h2>
-          <mat-form-field appearance="outline" class="season-picker">
-            <mat-label>Season</mat-label>
-            <mat-select [value]="selectedChartSeason" (selectionChange)="selectChartSeason($event.value)">
-              @for (season of seasonTrends; track season.slug) {
-                <mat-option [value]="season.slug">{{ season.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+          <div class="chart-controls">
+            <mat-form-field appearance="outline" class="chart-picker">
+              <mat-label>Chart</mat-label>
+              <mat-select [value]="selectedChartMode" (selectionChange)="selectChartMode($event.value)">
+                <mat-option value="running">Running season ratio</mat-option>
+                <mat-option value="training">Per-training ratio</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="season-picker">
+              <mat-label>Season</mat-label>
+              <mat-select [value]="selectedChartSeason" (selectionChange)="selectChartSeason($event.value)">
+                @for (season of seasonTrends; track season.slug) {
+                  <mat-option [value]="season.slug">{{ season.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
         </div>
         @if (chartPoints.length === 0) {
           <p>No matches for this player in this season.</p>
         } @else {
           <div class="chart-container">
             <canvas baseChart [data]="chartData" [options]="chartOptions" [type]="'line'"
-              role="img" [attr.aria-label]="'Running match win ratio over trainings in ' + selectedChartSeasonLabel"></canvas>
+              role="img" [attr.aria-label]="(selectedChartMode === 'running' ? 'Running season' : 'Per-training') + ' match win ratio over trainings in ' + selectedChartSeasonLabel"></canvas>
           </div>
-          <p class="chart-note">Each point includes all matches played up to that training. Hover or tap a point for that training's results and partners.</p>
+          <p class="chart-note">
+            @if (selectedChartMode === 'running') {
+              Each point includes all matches played up to that training.
+            } @else {
+              Each point shows wins divided by matches played at that training.
+            }
+            Hover or tap a point for the results and partners.
+          </p>
           @if (hasEstimatedDates) {
             <p class="chart-note">Some training dates were unavailable, so their match entry dates are shown instead.</p>
           }
@@ -143,7 +161,7 @@ interface SeasonTrend {
             @if (season.rows.length === 0) {
               <p>No partner matches this season.</p>
             } @else {
-              <div class="table-scroll">
+              <div class="table-scroll partner-table-scroll">
                 <table mat-table class="partner-table" [dataSource]="season.rows">
                   <ng-container matColumnDef="partner">
                     <th mat-header-cell *matHeaderCellDef>Partner</th>
@@ -164,6 +182,27 @@ interface SeasonTrend {
                   <tr mat-header-row *matHeaderRowDef="partnerColumns"></tr>
                   <tr mat-row *matRowDef="let row; columns: partnerColumns"></tr>
                 </table>
+              </div>
+              <div class="partner-cards">
+                @for (row of season.rows; track $index) {
+                  <article class="partner-card">
+                    <h4>{{ row.partner }}</h4>
+                    <dl>
+                      <div>
+                        <dt>Matches played</dt>
+                        <dd>{{ row.matches }}</dd>
+                      </div>
+                      <div>
+                        <dt>Wins</dt>
+                        <dd>{{ row.wins }}</dd>
+                      </div>
+                      <div>
+                        <dt>Ratio</dt>
+                        <dd>{{ row.ratio }}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                }
               </div>
             }
           </div>
@@ -211,6 +250,16 @@ interface SeasonTrend {
       margin: 0 0 16px;
     }
 
+    .chart-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .chart-picker {
+      width: 210px;
+    }
+
     .season-picker {
       width: 200px;
     }
@@ -232,6 +281,7 @@ interface SeasonTrend {
 
     .partner-season {
       margin-top: 24px;
+      container-type: inline-size;
     }
 
     table {
@@ -247,6 +297,52 @@ interface SeasonTrend {
     .partner-table .mat-column-matches { width: 25%; }
     .partner-table .mat-column-wins { width: 15%; }
     .partner-table .mat-column-ratio { width: 15%; }
+
+    .partner-cards {
+      display: none;
+    }
+
+    @container (max-width: 700px) {
+      .partner-table-scroll {
+        display: none;
+      }
+
+      .partner-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .partner-card {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 12px;
+        background: var(--mat-sys-surface-container-low);
+      }
+
+      .partner-card h4 {
+        margin: 0 0 12px;
+        overflow-wrap: anywhere;
+      }
+
+      .partner-card dl {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0;
+      }
+
+      .partner-card dt {
+        color: var(--mat-sys-on-surface-variant);
+        font-size: 0.75rem;
+      }
+
+      .partner-card dd {
+        margin: 4px 0 0;
+        font-weight: 600;
+      }
+    }
   `,
 })
 export class PlayerDetailComponent {
@@ -256,6 +352,7 @@ export class PlayerDetailComponent {
   seasonRows: SeasonRatio[] = []
   partnerSeasons: PartnerSeason[] = []
   seasonTrends: SeasonTrend[] = []
+  selectedChartMode: ChartMode = 'running'
   selectedChartSeason = ''
   selectedChartSeasonLabel = ''
   chartPoints: TrainingPoint[] = []
@@ -276,13 +373,18 @@ export class PlayerDetailComponent {
           title: items => this.chartPoints[items[0]?.dataIndex]?.tooltipDate ?? '',
           label: item => {
             const point = this.chartPoints[item.dataIndex]
-            return point ? `Running ratio: ${point.ratio.toFixed(2)} (${point.cumulativeWins}/${point.cumulativeMatches})` : ''
+            if (!point) return ''
+            return this.selectedChartMode === 'running'
+              ? `Running ratio: ${point.ratio.toFixed(2)} (${point.cumulativeWins}/${point.cumulativeMatches})`
+              : `Training ratio: ${(point.trainingWins / point.trainingMatches).toFixed(2)} (${point.trainingWins}/${point.trainingMatches})`
           },
           afterLabel: item => {
             const point = this.chartPoints[item.dataIndex]
             if (!point) return []
             return [
-              `This training: ${point.trainingWins} wins / ${point.trainingMatches} matches`,
+              this.selectedChartMode === 'running'
+                ? `This training: ${point.trainingWins} wins / ${point.trainingMatches} matches (${(point.trainingWins / point.trainingMatches).toFixed(2)})`
+                : `Season to date: ${point.cumulativeWins} wins / ${point.cumulativeMatches} matches (${point.ratio.toFixed(2)})`,
               ...point.partners.map(partner => `Partner: ${partner}`),
             ]
           },
@@ -393,12 +495,23 @@ export class PlayerDetailComponent {
     this.selectedChartSeasonLabel = season?.label ?? ''
     this.chartPoints = season?.points ?? []
     this.hasEstimatedDates = this.chartPoints.some(point => point.dateEstimated)
+    this.updateChartData()
+  }
+
+  selectChartMode(mode: ChartMode): void {
+    this.selectedChartMode = mode
+    this.updateChartData()
+  }
+
+  private updateChartData(): void {
     const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--mat-sys-primary').trim() || '#006a6a'
     this.chartData = {
       labels: this.chartPoints.map(point => point.label),
       datasets: [{
-        label: 'Running ratio',
-        data: this.chartPoints.map(point => point.ratio),
+        label: this.selectedChartMode === 'running' ? 'Running ratio' : 'Per-training ratio',
+        data: this.chartPoints.map(point => this.selectedChartMode === 'running'
+          ? point.ratio
+          : point.trainingWins / point.trainingMatches),
         borderColor: primaryColor,
         backgroundColor: primaryColor,
         pointRadius: 4,

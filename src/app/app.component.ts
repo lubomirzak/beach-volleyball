@@ -98,13 +98,13 @@ export class AppComponent {
         : 'unknown-error'
       switch (code) {
         case 'auth/unauthorized-domain':
-          this.authError = 'Add localhost in Firebase Authentication → Settings → Authorized domains.'
+          this.authError = `Add ${window.location.hostname} in Firebase Authentication → Settings → Authorized domains.`
           break
         case 'auth/operation-not-allowed':
           this.authError = 'Enable Google in Firebase Authentication → Sign-in method.'
           break
         case 'auth/popup-blocked':
-          this.authError = 'Allow pop-ups for localhost and try again.'
+          this.authError = 'Allow pop-ups for this site and try again.'
           break
         case 'auth/popup-closed-by-user':
           this.authError = 'The sign-in window closed before sign-in finished.'

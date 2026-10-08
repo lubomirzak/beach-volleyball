@@ -1,5 +1,6 @@
 export interface Match {
   id: string
+  firestoreId?: string
   trainingId: string
   team1Player1: string
   team1Player2: string

@@ -28,6 +28,7 @@ service cloud.firestore {
     match /matches_W2026/{document} {
       allow read: if true;
       allow create: if isAdmin();
+      allow delete: if isAdmin();
     }
     match /fines_W2026/{document} {
       allow read: if true;

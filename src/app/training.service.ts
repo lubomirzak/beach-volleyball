@@ -69,6 +69,7 @@ export class TrainingService {
 
       let trainingDetailMatch: TrainingDetailsMatch = {
         id: x.id,
+        firestoreId: x.firestoreId,
         team1: `${player11.firstName} ${player11.lastName}, ${player12.firstName} ${player12.lastName}`,
         team2: `${player21.firstName} ${player21.lastName}, ${player22.firstName} ${player22.lastName}`,
         score: `${x.team1Points}:${x.team2Points}`,

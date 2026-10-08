@@ -7,6 +7,8 @@ import {
   getDocs,
   DocumentData,
   query,
+  doc,
+  deleteDoc,
 } from '@angular/fire/firestore'
 import { Match } from 'src/interfaces/match'
 import { SeasonService } from './season.service'
@@ -42,6 +44,7 @@ export class MatchService {
         const item = doc.data()
         result.push({
           id: item['id'],
+          firestoreId: doc.id,
           trainingId: item['trainingId'] ?? 'UNKNOWN',
           team1Player1: item['team1Player1'],
           team1Player2: item['team1Player2'],
@@ -54,6 +57,15 @@ export class MatchService {
       })
       return result
     })
+
+  deleteMatch = async (firestoreId: string): Promise<void> => {
+    if (!firestoreId) throw new Error('Match document ID is missing.')
+
+    await runInInjectionContext(this.injector, () =>
+      deleteDoc(doc(this.firestore, this.collectionName, firestoreId))
+    )
+    this.cacheService.clear(`matches:${this.collectionName}`)
+  }
 
   create = async (
     trainingId: string,

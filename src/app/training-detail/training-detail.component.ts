@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core'
+import { Component, TemplateRef, ViewChild, inject } from '@angular/core'
+import { toSignal } from '@angular/core/rxjs-interop'
 import { CommonModule } from '@angular/common'
 import { NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
@@ -16,6 +17,7 @@ import { MatButtonModule } from '@angular/material/button'
 import { MatIconModule } from '@angular/material/icon'
 import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { MatDialog, MatDialogModule } from '@angular/material/dialog'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterModule } from '@angular/router'
 import { ActivatedRoute } from '@angular/router'
@@ -23,6 +25,8 @@ import { Training } from 'src/interfaces/training'
 import { Team } from 'src/interfaces/team'
 import { Match } from 'src/interfaces/match'
 import { Player } from 'src/interfaces/player'
+import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
+import { firstValueFrom } from 'rxjs'
 
 @Component({
   selector: 'app-training-detail',
@@ -36,6 +40,7 @@ import { Player } from 'src/interfaces/player'
     MatIconModule,
     MatDividerModule,
     MatProgressSpinnerModule,
+    MatDialogModule,
     MatDatepickerModule,
     NgIf,
     RouterModule,
@@ -88,6 +93,7 @@ import { Player } from 'src/interfaces/player'
       </div>
 
       <h3>Matches</h3>
+      <div class="matches-table-scroll">
       <table mat-table [dataSource]="matches$">
         <ng-container matColumnDef="team1">
           <th mat-header-cell *matHeaderCellDef>Team 1</th>
@@ -118,11 +124,26 @@ import { Player } from 'src/interfaces/player'
           <td mat-cell *matCellDef="let element">{{ element.score }}</td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
-        <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
-      </table>
+        <ng-container matColumnDef="actions" stickyEnd>
+          <th mat-header-cell *matHeaderCellDef aria-label="Match actions"></th>
+          <td mat-cell *matCellDef="let element">
+            @if (isAdmin()) {
+              <button mat-icon-button class="delete-match-button" type="button"
+                [attr.aria-label]="'Delete match: ' + element.team1 + ' versus ' + element.team2 + ', ' + element.score"
+                [disabled]="deletingMatchId !== null"
+                (click)="confirmDelete(element)">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
 
-      @if (authService.isAdmin$ | async) {
+        <tr mat-header-row *matHeaderRowDef="isAdmin() ? adminColumnNames : columnNames"></tr>
+        <tr mat-row *matRowDef="let row; columns: isAdmin() ? adminColumnNames : columnNames"></tr>
+      </table>
+      </div>
+
+      @if (isAdmin()) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
 
       <h3>Add match result</h3>
@@ -228,6 +249,18 @@ import { Player } from 'src/interfaces/player'
       </form>
       }
     </div>
+
+    <ng-template #confirmDeleteDialog>
+      <h2 mat-dialog-title>Delete match?</h2>
+      <mat-dialog-content>
+        <p>Delete {{ matchToDelete?.team1 }} vs {{ matchToDelete?.team2 }} ({{ matchToDelete?.score }})?</p>
+        <p>This cannot be undone.</p>
+      </mat-dialog-content>
+      <mat-dialog-actions align="end">
+        <button mat-button [mat-dialog-close]="false">Cancel</button>
+        <button mat-flat-button class="confirm-delete-button" [mat-dialog-close]="true">Delete match</button>
+      </mat-dialog-actions>
+    </ng-template>
   `,
   providers: [provideNativeDateAdapter()],
   styles: `
@@ -250,6 +283,25 @@ import { Player } from 'src/interfaces/player'
       background-color: var(--mat-sys-primary-container);
     }
 
+    .matches-table-scroll {
+      overflow-x: auto;
+    }
+
+    .mat-column-actions {
+      width: 56px;
+      padding-right: 8px;
+      text-align: right;
+    }
+
+    .delete-match-button {
+      color: var(--mat-sys-primary);
+    }
+
+    .confirm-delete-button.mat-mdc-unelevated-button {
+      background: var(--mat-sys-error);
+      color: var(--mat-sys-on-error);
+    }
+
     @media (min-width: 320px) {
         .col {
             width: 100%;
@@ -267,13 +319,19 @@ import { Player } from 'src/interfaces/player'
 })
 export class TrainingDetailComponent {
   readonly authService = inject(AuthService)
+  readonly isAdmin = toSignal(this.authService.isAdmin$, { initialValue: false })
+  private readonly dialog = inject(MatDialog)
+  @ViewChild('confirmDeleteDialog') confirmDeleteDialog?: TemplateRef<unknown>
   trainingId: string
-  matches$: any[] = []
+  matches$: TrainingDetailsMatch[] = []
   scoreboards$: any[] = []
   playersData$: Player[] = []
   teamsData$: Team[] = []
   trainingData$?: Training = undefined
   columnNames: any[] = ['team1', 'team2', 'score']
+  adminColumnNames: string[] = [...this.columnNames, 'actions']
+  matchToDelete?: TrainingDetailsMatch
+  deletingMatchId: string | null = null
   scoreboardColumnNames: any[] = ['name', 'sets', 'points', 'ratio']
   showSpinner: boolean = true
   attendingOptions: string[] = []
@@ -382,6 +440,45 @@ export class TrainingDetailComponent {
       })
     } else {
       this.snackBar.open('Could not create match. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
+    }
+  }
+
+  async confirmDelete(match: TrainingDetailsMatch): Promise<void> {
+    if (!this.isAdmin() || !match.firestoreId || this.matchToDelete || this.deletingMatchId || !this.confirmDeleteDialog) return
+
+    this.matchToDelete = match
+    const confirmed = await firstValueFrom(this.dialog.open(this.confirmDeleteDialog, {
+      width: '440px',
+      maxWidth: 'calc(100vw - 32px)',
+      role: 'alertdialog',
+    }).afterClosed())
+    this.matchToDelete = undefined
+    if (confirmed !== true) return
+
+    this.deletingMatchId = match.firestoreId
+    try {
+      await this.matchService.deleteMatch(match.firestoreId)
+    } catch (error) {
+      console.error('Could not delete match', error)
+      this.snackBar.open('Could not delete match. Check your sign-in and Firestore rules.', 'Close', { duration: 5000 })
+      this.deletingMatchId = null
+      return
+    }
+
+    try {
+      const [details, teams] = await Promise.all([
+        this.trainingService.getTrainingDetails(this.trainingId),
+        this.trainingService.getTeams(),
+      ])
+      this.matches$ = details.matches
+      this.scoreboards$ = details.scoreboards
+      this.teamsData$ = teams
+      this.snackBar.open('Match deleted', 'Close', { duration: 3000 })
+    } catch (error) {
+      console.error('Could not refresh training after deleting match', error)
+      this.snackBar.open('Match deleted. Refresh the page to update results.', 'Close', { duration: 5000 })
+    } finally {
+      this.deletingMatchId = null
     }
   }
 

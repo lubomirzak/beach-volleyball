@@ -10,6 +10,7 @@ import { TrainingService } from '../training.service'
 import { MatchService } from '../match.service'
 import { AuthService } from '../auth.service'
 import { PlayerService } from '../player.service'
+import { nameMatchesQuery } from '../name-search'
 import { FormControl, ReactiveFormsModule, FormBuilder } from '@angular/forms'
 import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -376,9 +377,8 @@ export class TrainingDetailComponent {
     if (!value || this.playersData$.some(player => player.id === value)) {
       return this.playersData$
     }
-    const search = value.trim().toLocaleLowerCase()
     return this.playersData$.filter(player =>
-      `${player.firstName} ${player.lastName}`.toLocaleLowerCase().includes(search)
+      nameMatchesQuery(`${player.firstName} ${player.lastName}`, value)
     )
   }
 
@@ -391,9 +391,8 @@ export class TrainingDetailComponent {
     if (!value || this.teamsData$.some(team => team.id === value)) {
       return this.teamsData$
     }
-    const search = value.trim().toLocaleLowerCase()
     return this.teamsData$.filter(team =>
-      `${team.player1Name} ${team.player2Name}`.toLocaleLowerCase().includes(search)
+      nameMatchesQuery(`${team.player1Name} ${team.player2Name}`, value)
     )
   }
 

@@ -2,10 +2,13 @@ import { Component, inject } from '@angular/core'
 import { AsyncPipe, NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
 import { MatInputModule } from '@angular/material/input'
+import { MatAutocompleteModule } from '@angular/material/autocomplete'
 import { MatFormFieldModule } from '@angular/material/form-field'
+import { MatIconModule } from '@angular/material/icon'
 import { PlayerService } from '../player.service'
 import { MatchService } from '../match.service'
 import { isDecidedMatch } from '../match-statistics'
+import { nameMatchesQuery, normalizeName } from '../name-search'
 import { HISTORY_SEASONS } from '../history/seasons'
 import { AuthService } from '../auth.service'
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
@@ -15,12 +18,21 @@ import { MatDividerModule } from '@angular/material/divider'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { RouterModule } from '@angular/router'
 
+interface PlayerRow {
+  id: string
+  name: string
+  matchesThisSeason: number
+  totalMatches: number
+}
+
 @Component({
   selector: 'app-players',
   imports: [
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
+    MatAutocompleteModule,
+    MatIconModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
@@ -36,6 +48,21 @@ import { RouterModule } from '@angular/router'
 
     <div *ngIf="!showSpinner">
       <h1>Players</h1>
+      <mat-form-field appearance="outline" class="player-search">
+        <mat-label>Find player</mat-label>
+        <input matInput [formControl]="nameFilter" [matAutocomplete]="playerAutocomplete" />
+        @if (nameFilter.value) {
+          <button mat-icon-button matSuffix type="button" aria-label="Clear player search"
+            (click)="nameFilter.setValue('')">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+        <mat-autocomplete #playerAutocomplete="matAutocomplete">
+          @for (player of suggestedPlayers; track player.id) {
+            <mat-option [value]="player.name">{{ player.name }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
       <table mat-table [dataSource]="playersData$">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Name</th>
@@ -57,6 +84,9 @@ import { RouterModule } from '@angular/router'
         <tr mat-header-row *matHeaderRowDef="columnNames"></tr>
         <tr mat-row *matRowDef="let row; columns: columnNames"></tr>
       </table>
+      @if (playersData$.length === 0) {
+        <p>No players found.</p>
+      }
 
       @if (authService.isAdmin$ | async) {
       <mat-divider style="margin-top: 50px; margin-bottom: 50px;"></mat-divider>
@@ -107,6 +137,11 @@ import { RouterModule } from '@angular/router'
     padding: 0;
   }
 
+  .player-search {
+    width: min(100%, 360px);
+    margin-bottom: 12px;
+  }
+
   .player-link {
     display: block;
     padding: 16px;
@@ -120,7 +155,10 @@ import { RouterModule } from '@angular/router'
 })
 export class PlayersComponent {
   readonly authService = inject(AuthService)
-  playersData$: { id: string; name: string; matchesThisSeason: number; totalMatches: number }[] = []
+  readonly nameFilter = new FormControl('', { nonNullable: true })
+  private allPlayersData: PlayerRow[] = []
+  playersData$: PlayerRow[] = []
+  suggestedPlayers: PlayerRow[] = []
   columnNames: string[] = ['name', 'matchesThisSeason', 'totalMatches']
   showSpinner: boolean = true
   applyForm = new FormGroup({
@@ -133,7 +171,17 @@ export class PlayersComponent {
     private playerService: PlayerService,
     private matchService: MatchService
   ) {
+    this.nameFilter.valueChanges.subscribe(() => this.applyNameFilter())
     this.reloadData()
+  }
+
+  private applyNameFilter(): void {
+    const query = this.nameFilter.value
+    const hasQuery = normalizeName(query).trim().length > 0
+    this.playersData$ = hasQuery
+      ? this.allPlayersData.filter(player => nameMatchesQuery(player.name, query))
+      : this.allPlayersData
+    this.suggestedPlayers = hasQuery ? this.playersData$.slice(0, 8) : []
   }
 
   submitNewPlayer = async () => {
@@ -182,7 +230,7 @@ export class PlayersComponent {
       }
     })
 
-    this.playersData$ = players.slice().sort((a, b) => {
+    this.allPlayersData = players.slice().sort((a, b) => {
       return a.lastName.localeCompare(b.lastName)
         || a.firstName.localeCompare(b.firstName)
     }).map(player => ({
@@ -191,6 +239,7 @@ export class PlayersComponent {
       matchesThisSeason: matchesThisSeasonById.get(player.id) ?? 0,
       totalMatches: totalMatchesById.get(player.id) ?? 0,
     }))
+    this.applyNameFilter()
     this.showSpinner = false
   }
 }

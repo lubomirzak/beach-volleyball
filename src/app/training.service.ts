@@ -6,6 +6,8 @@ import {
   addDoc,
   getDocs,
   DocumentData,
+  query,
+  where,
 } from '@angular/fire/firestore'
 import { Training } from 'src/interfaces/training'
 import { MatchService } from './match.service'
@@ -14,33 +16,31 @@ import { TrainingDetails } from 'src/interfaces/trainingDetails'
 import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
 import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
-import { SeasonService } from './season.service'
 import { Player } from 'src/interfaces/player'
 import { Team } from 'src/interfaces/team'
 import { CacheService } from './cache.service'
+import { SHARED_COLLECTIONS, SeasonStorageService } from './season-storage.service'
 
 @Injectable({
   providedIn: 'root',
 })
 export class TrainingService {
-  collectionName: string
   constructor(
     private firestore: Firestore,
     private matchService: MatchService,
     private playerService: PlayerService,
-    seasonService: SeasonService,
     private cacheService: CacheService,
-    private injector: EnvironmentInjector
-  ) {
-        this.collectionName = 'trainings' + seasonService.getSuffix();
-  }
+    private injector: EnvironmentInjector,
+    private seasonStorage: SeasonStorageService
+  ) {}
 
-  get = (trainingCollection: string = this.collectionName): Promise<Training[]> =>
-    this.cacheService.getOrLoad(`trainings:${trainingCollection}`, async () => {
+  get = async (seasonId: string = this.seasonStorage.currentSeasonId): Promise<Training[]> => {
+    return this.cacheService.getOrLoad(`trainings:${seasonId}`, async () => {
       const result: Training[] = []
-      const snapshot = await runInInjectionContext(this.injector, () =>
-        getDocs(collection(this.firestore, trainingCollection))
-      )
+      const snapshot = await runInInjectionContext(this.injector, () => {
+        const trainingRef = collection(this.firestore, SHARED_COLLECTIONS.trainings)
+        return getDocs(query(trainingRef, where('seasonId', '==', seasonId)))
+      })
       snapshot.forEach((doc) => {
         const item = doc.data()
         result.push({
@@ -50,6 +50,7 @@ export class TrainingService {
       })
       return result.sort((a, b) => b.date.getTime() - a.date.getTime())
     })
+  }
 
   getById = async (trainingId: string): Promise<Training> => {
     const trainings = await this.get()
@@ -146,12 +147,12 @@ export class TrainingService {
     return result.sort((a,b) => b.setsPlayed - a.setsPlayed)
   }
 
-  getLeaderboard = async (matchCollection?: string): Promise<
+  getLeaderboard = async (seasonId?: string): Promise<
     [TrainingDetailsScoreboard[], TrainingDetailsScoreboardTeam[]]
   > => {
     const [currentPlayers, matches] = await Promise.all([
       this.playerService.get(),
-      this.matchService.getAllMatches(matchCollection),
+      this.matchService.getAllMatches(seasonId),
     ])
     const playersById = new Map(currentPlayers.map(player => [player.id, player] as const))
     for (const match of matches) {
@@ -192,7 +193,7 @@ export class TrainingService {
 
     // Temporarily skip the minimum-match requirement for the current season.
     // Keep the existing threshold on completed seasons.
-    if ((matchCollection ?? this.matchService.collectionName) !== this.matchService.collectionName) {
+    if ((seasonId ?? this.seasonStorage.currentSeasonId) !== this.seasonStorage.currentSeasonId) {
       trainingDetailScoreboards = trainingDetailScoreboards.filter(
         (x) => x.wonSets + x.lostSets > 6
       )
@@ -219,9 +220,10 @@ export class TrainingService {
 
     try {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
-        addDoc(collection(this.firestore, this.collectionName), training)
+        addDoc(collection(this.firestore, SHARED_COLLECTIONS.trainings),
+          { ...training, seasonId: this.seasonStorage.currentSeasonId })
       )
-      this.cacheService.clear(`trainings:${this.collectionName}`)
+      this.cacheService.clear(`trainings:${this.seasonStorage.currentSeasonId}`)
       return newMessageRef
     } catch (error) {
       console.error('Error writing new training to Firebase Database', error)

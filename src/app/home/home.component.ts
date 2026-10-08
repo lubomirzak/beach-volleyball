@@ -121,16 +121,16 @@ export class HomeComponent {
       }
 
       this.title = `${season.label} leaderboards`
-      void this.reloadData(season.matchesCollection)
+      void this.reloadData(season.slug)
     })
   }
 
-  reloadData = async (matchCollection?: string) => {
+  reloadData = async (seasonId?: string) => {
     const requestId = ++this.requestId
     this.loading = true
     this.error = ''
     try {
-      const [scoreboards, scoreboardsTeams] = await this.trainingService.getLeaderboard(matchCollection)
+      const [scoreboards, scoreboardsTeams] = await this.trainingService.getLeaderboard(seasonId)
       if (requestId !== this.requestId) return
       this.scoreboards$ = scoreboards
       this.scoreboardsTeams$ = scoreboardsTeams

@@ -422,12 +422,12 @@ export class PlayerDetailComponent {
       this.playerName = this.formatName(player)
       const playersById = new Map(players.map(item => [item.id, item] as const))
       const matchesBySeason = await Promise.all(HISTORY_SEASONS.map(season =>
-        this.matchService.getAllMatches(season.matchesCollection)
+        this.matchService.getAllMatches(season.slug)
       ))
       const trainingsBySeason = await Promise.all(HISTORY_SEASONS.map(async (season, index) => {
         if (!matchesBySeason[index].some(match => this.partnerInMatch(match, playerId))) return [] as Training[]
         try {
-          return await this.trainingService.get(season.trainingsCollection)
+          return await this.trainingService.get(season.slug)
         } catch (error) {
           console.warn(`Could not load training dates for ${season.label}`, error)
           return [] as Training[]

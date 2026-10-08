@@ -7,38 +7,36 @@ import {
   getDocs,
   DocumentData,
   query,
+  where,
   doc,
   deleteDoc,
 } from '@angular/fire/firestore'
 import { Match } from 'src/interfaces/match'
-import { SeasonService } from './season.service'
 import { CacheService } from './cache.service'
+import { SHARED_COLLECTIONS, SeasonStorageService } from './season-storage.service'
 
 @Injectable({
   providedIn: 'root',
 })
 export class MatchService {
-  collectionName: string
   constructor(
     private firestore: Firestore,
-    seasonService: SeasonService,
     private cacheService: CacheService,
-    private injector: EnvironmentInjector
-  ) {
-        this.collectionName = 'matches' + seasonService.getSuffix();
-  }
+    private injector: EnvironmentInjector,
+    private seasonStorage: SeasonStorageService
+  ) {}
 
   getMatchesForTraining = async (trainingId: string): Promise<Match[]> => {
     const matches = await this.getAllMatches()
     return matches.filter(match => match.trainingId === trainingId)
   }
 
-  getAllMatches = (matchCollection: string = this.collectionName): Promise<Match[]> =>
-    this.cacheService.getOrLoad(`matches:${matchCollection}`, async () => {
+  getAllMatches = async (seasonId: string = this.seasonStorage.currentSeasonId): Promise<Match[]> => {
+    return this.cacheService.getOrLoad(`matches:${seasonId}`, async () => {
       const result: Match[] = []
       const snapshot = await runInInjectionContext(this.injector, () => {
-        const matchesRef = collection(this.firestore, matchCollection)
-        return getDocs(query(matchesRef))
+        const matchesRef = collection(this.firestore, SHARED_COLLECTIONS.matches)
+        return getDocs(query(matchesRef, where('seasonId', '==', seasonId)))
       })
       snapshot.forEach((doc) => {
         const item = doc.data()
@@ -57,14 +55,15 @@ export class MatchService {
       })
       return result
     })
+  }
 
   deleteMatch = async (firestoreId: string): Promise<void> => {
     if (!firestoreId) throw new Error('Match document ID is missing.')
 
     await runInInjectionContext(this.injector, () =>
-      deleteDoc(doc(this.firestore, this.collectionName, firestoreId))
+      deleteDoc(doc(this.firestore, SHARED_COLLECTIONS.matches, firestoreId))
     )
-    this.cacheService.clear(`matches:${this.collectionName}`)
+    this.cacheService.clear(`matches:${this.seasonStorage.currentSeasonId}`)
   }
 
   create = async (
@@ -90,9 +89,10 @@ export class MatchService {
 
     try {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
-        addDoc(collection(this.firestore, this.collectionName), match)
+        addDoc(collection(this.firestore, SHARED_COLLECTIONS.matches),
+          { ...match, seasonId: this.seasonStorage.currentSeasonId })
       )
-      this.cacheService.clear(`matches:${this.collectionName}`)
+      this.cacheService.clear(`matches:${this.seasonStorage.currentSeasonId}`)
       return newMessageRef
     } catch (error) {
       console.error('Error writing new match to Firebase Database', error)

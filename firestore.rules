@@ -7,30 +7,24 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.auth.token.email == 'lubomir.zak@gmail.com';
     }
+    match /seasonMatches/{document} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.seasonId == 'winter-2026';
+      allow delete: if isAdmin() && resource.data.seasonId == 'winter-2026';
+    }
+    match /seasonTrainings/{document} {
+      allow read: if true;
+      allow create: if isAdmin()
+        && request.resource.data.seasonId == 'winter-2026';
+    }
+    match /seasonFines/{document} {
+      allow read: if isAdmin() || resource.data.seasonId == 'winter-2026';
+      allow create: if isAdmin()
+        && request.resource.data.seasonId == 'winter-2026';
+    }
 
     match /players/{document} {
-      allow read: if true;
-      allow create: if isAdmin();
-    }
-    match /trainings_W2026/{document} {
-      allow read: if true;
-      allow create: if isAdmin();
-    }
-    match /matches/{document} {
-      allow read: if true;
-    }
-    match /matches_W2025/{document} {
-      allow read: if true;
-    }
-    match /matches_S2026/{document} {
-      allow read: if true;
-    }
-    match /matches_W2026/{document} {
-      allow read: if true;
-      allow create: if isAdmin();
-      allow delete: if isAdmin();
-    }
-    match /fines_W2026/{document} {
       allow read: if true;
       allow create: if isAdmin();
     }

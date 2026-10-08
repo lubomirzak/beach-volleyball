@@ -6,40 +6,41 @@ import {
   addDoc,
   getDocs,
   DocumentData,
+  query,
+  where,
 } from '@angular/fire/firestore'
 import { FineDetails } from 'src/interfaces/fineDetails'
 import { CacheService } from './cache.service'
-import { SeasonService } from './season.service'
 import { PlayerService } from './player.service'
 import { TrainingService } from './training.service'
 import { Fine } from 'src/interfaces/fine'
+import { SHARED_COLLECTIONS, SeasonStorageService } from './season-storage.service'
 
 @Injectable({
   providedIn: 'root',
 })
 export class FineService {
-  collectionName: string
   constructor(
     private firestore: Firestore,
     private cacheService: CacheService,
     private playerService: PlayerService,
     private trainingService: TrainingService,
-    seasonService: SeasonService,
-    private injector: EnvironmentInjector
-  ) {
-    this.collectionName = 'fines' + seasonService.getSuffix();
-  }
+    private injector: EnvironmentInjector,
+    private seasonStorage: SeasonStorageService
+  ) {}
 
-  get = (): Promise<FineDetails[]> =>
-    this.cacheService.getOrLoad(`fines:${this.collectionName}`, async () => {
+  get = async (): Promise<FineDetails[]> => {
+    const seasonId = this.seasonStorage.currentSeasonId
+    return this.cacheService.getOrLoad(`fines:${seasonId}`, async () => {
       const result: FineDetails[] = []
       const [playersData, trainingsData] = await Promise.all([
         this.playerService.get(),
         this.trainingService.get(),
       ])
-      const snapshot = await runInInjectionContext(this.injector, () =>
-        getDocs(collection(this.firestore, this.collectionName))
-      )
+      const snapshot = await runInInjectionContext(this.injector, () => {
+        const fineRef = collection(this.firestore, SHARED_COLLECTIONS.fines)
+        return getDocs(query(fineRef, where('seasonId', '==', seasonId)))
+      })
       snapshot.forEach((doc) => {
         const item = doc.data()
         const player = playersData.filter((p) => p.id == item['playerId'])[0]
@@ -59,6 +60,7 @@ export class FineService {
         b.created.toString().localeCompare(a.created.toString())
       )
     })
+  }
 
   create = async (
     playerId: string,
@@ -75,9 +77,10 @@ export class FineService {
 
     try {
       const newMessageRef = await runInInjectionContext(this.injector, () =>
-        addDoc(collection(this.firestore, this.collectionName), fine)
+        addDoc(collection(this.firestore, SHARED_COLLECTIONS.fines),
+          { ...fine, seasonId: this.seasonStorage.currentSeasonId })
       )
-      this.cacheService.clear(`fines:${this.collectionName}`)
+      this.cacheService.clear(`fines:${this.seasonStorage.currentSeasonId}`)
       return newMessageRef
     } catch (error) {
       console.error('Error writing new fine to Firebase Database', error)

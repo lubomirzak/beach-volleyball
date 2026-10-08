@@ -8,7 +8,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatIconModule } from '@angular/material/icon'
 import { MatInputModule } from '@angular/material/input'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { MatSelectModule } from '@angular/material/select'
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -36,7 +36,7 @@ import { TrainingService } from '../training.service'
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
+    LoadingSpinnerComponent,
     MatSelectModule,
     MatSlideToggleModule,
     MatSortModule,
@@ -49,11 +49,11 @@ import { TrainingService } from '../training.service'
     <app-payment-iban />
 
     @if (isAdmin() === undefined) {
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Checking access" />
     } @else if (!isAdmin()) {
       <p>Only the admin can view substitute payments.</p>
     } @else if (loading) {
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading substitute payments" />
     } @else if (error) {
       <p role="alert">{{ error }}</p>
       <button mat-stroked-button type="button" (click)="reloadData()">Try again</button>

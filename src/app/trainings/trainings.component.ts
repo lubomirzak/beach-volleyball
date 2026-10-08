@@ -14,7 +14,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
 import { MatDividerModule } from '@angular/material/divider'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterModule } from '@angular/router'
 import { Match } from 'src/interfaces/match'
@@ -28,7 +28,7 @@ import { Match } from 'src/interfaces/match'
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
-    MatProgressSpinnerModule,
+    LoadingSpinnerComponent,
     MatDatepickerModule,
     NgIf,
     AsyncPipe,
@@ -37,7 +37,7 @@ import { Match } from 'src/interfaces/match'
   template: `
     <h1>Trainings</h1>
     <div *ngIf="showSpinner">
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading trainings" />
     </div>
 
     <div *ngIf="!showSpinner">

@@ -2,7 +2,7 @@ import { Component } from '@angular/core'
 import { MatButtonModule } from '@angular/material/button'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatIconModule } from '@angular/material/icon'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { MatSelectModule } from '@angular/material/select'
 import { MatTableModule } from '@angular/material/table'
 import { MatSortModule, Sort } from '@angular/material/sort'
@@ -86,7 +86,7 @@ type ChartMode = 'running' | 'training'
 
 @Component({
   selector: 'app-player-detail',
-  imports: [MatSortModule, BaseChartDirective, MatButtonModule, MatFormFieldModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule, MatTableModule, RouterModule],
+  imports: [MatSortModule, BaseChartDirective, MatButtonModule, MatFormFieldModule, MatIconModule, LoadingSpinnerComponent, MatSelectModule, MatTableModule, RouterModule],
   template: `
     <header class="page-heading">
       <h1>{{ playerName || 'Player details' }}</h1>
@@ -97,7 +97,7 @@ type ChartMode = 'running' | 'training'
     </header>
 
     @if (loading) {
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading player details" />
     } @else if (error) {
       <p role="alert">{{ error }}</p>
     } @else {

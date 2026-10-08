@@ -8,7 +8,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { MatIconModule } from '@angular/material/icon'
 import { MatInputModule } from '@angular/material/input'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { MatSelectModule } from '@angular/material/select'
 import { MatSlideToggleChange, MatSlideToggleModule } from '@angular/material/slide-toggle'
 import { MatSnackBar } from '@angular/material/snack-bar'
@@ -37,7 +37,7 @@ import { TrainingService } from '../training.service'
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
+    LoadingSpinnerComponent,
     MatSelectModule,
     MatSlideToggleModule,
     MatSortModule,
@@ -50,7 +50,7 @@ import { TrainingService } from '../training.service'
     <h1>Fines</h1>
     <app-payment-iban />
     @if (showSpinner) {
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading fines" />
     } @else if (error) {
       <p role="alert">{{ error }}</p>
       <button mat-stroked-button type="button" (click)="reloadData()">Try again</button>

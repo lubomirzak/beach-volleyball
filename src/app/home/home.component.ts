@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
 import { MatSortModule, Sort } from '@angular/material/sort'
 import { scoreboardSortValue, sortTableRows } from '../table-sort'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { MatButtonModule } from '@angular/material/button'
 import { MatIconModule } from '@angular/material/icon'
 import { ActivatedRoute, RouterModule } from '@angular/router'
@@ -18,7 +18,7 @@ import { toSignal } from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'app-home',
-  imports: [MatSortModule, CommonModule, MatTableModule, MatProgressSpinnerModule, MatButtonModule, MatIconModule, RouterModule],
+  imports: [MatSortModule, CommonModule, MatTableModule, LoadingSpinnerComponent, MatButtonModule, MatIconModule, RouterModule],
   template: `
     <header class="page-heading">
       <h1>{{ title }}</h1>
@@ -30,7 +30,7 @@ import { toSignal } from '@angular/core/rxjs-interop'
       }
     </header>
     @if (loading) {
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading leaderboards" />
     }
     @if (error) {
       <p role="alert">{{ error }}</p>

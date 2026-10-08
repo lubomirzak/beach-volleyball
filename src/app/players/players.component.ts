@@ -17,7 +17,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms'
 import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
 import { MatDividerModule } from '@angular/material/divider'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { RouterModule } from '@angular/router'
 
 interface PlayerRow {
@@ -38,14 +38,14 @@ interface PlayerRow {
     ReactiveFormsModule,
     MatButtonModule,
     MatDividerModule,
-    MatProgressSpinnerModule,
+    LoadingSpinnerComponent,
     RouterModule,
     NgIf,
     AsyncPipe,
   ],
   template: `
     <div *ngIf="showSpinner">
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading players" />
     </div>
 
     <div *ngIf="!showSpinner">

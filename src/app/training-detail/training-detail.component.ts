@@ -19,7 +19,7 @@ import { MatSnackBar } from '@angular/material/snack-bar'
 import { MatButtonModule } from '@angular/material/button'
 import { MatIconModule } from '@angular/material/icon'
 import { MatDividerModule } from '@angular/material/divider'
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
+import { LoadingSpinnerComponent } from '../loading-spinner.component'
 import { MatDialog, MatDialogModule } from '@angular/material/dialog'
 import { provideNativeDateAdapter } from '@angular/material/core'
 import { RouterModule } from '@angular/router'
@@ -42,7 +42,7 @@ import { firstValueFrom } from 'rxjs'
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    MatProgressSpinnerModule,
+    LoadingSpinnerComponent,
     MatDialogModule,
     MatDatepickerModule,
     NgIf,
@@ -51,7 +51,7 @@ import { firstValueFrom } from 'rxjs'
   ],
   template: `
     <div *ngIf="showSpinner">
-      <mat-spinner></mat-spinner>
+      <app-loading-spinner label="Loading training details" />
     </div>
 
     <div *ngIf="!showSpinner">

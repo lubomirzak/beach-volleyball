@@ -18,6 +18,7 @@ import { PlayerService } from './player.service'
 import { TrainingService } from './training.service'
 import { Fine } from 'src/interfaces/fine'
 import { SHARED_COLLECTIONS, SeasonStorageService } from './season-storage.service'
+import { SeasonFineTotalService } from './season-fine-total.service'
 
 @Injectable({
   providedIn: 'root',
@@ -29,7 +30,8 @@ export class FineService {
     private playerService: PlayerService,
     private trainingService: TrainingService,
     private injector: EnvironmentInjector,
-    private seasonStorage: SeasonStorageService
+    private seasonStorage: SeasonStorageService,
+    private seasonFineTotals: SeasonFineTotalService
   ) {}
 
   get = async (): Promise<FineDetails[]> => {
@@ -84,6 +86,8 @@ export class FineService {
           { ...fine, seasonId: this.seasonStorage.currentSeasonId })
       )
       this.cacheService.clear(`fines:${this.seasonStorage.currentSeasonId}`)
+      void this.seasonFineTotals.refresh(this.seasonStorage.currentSeasonId)
+        .catch(error => console.error('Could not update public season fine total', error))
       return newMessageRef
     } catch (error) {
       console.error('Error writing new fine to Firebase Database', error)
@@ -103,6 +107,8 @@ export class FineService {
       deleteDoc(doc(this.firestore, SHARED_COLLECTIONS.fines, firestoreId))
     )
     this.cacheService.clear(`fines:${this.seasonStorage.currentSeasonId}`)
+    void this.seasonFineTotals.refresh(this.seasonStorage.currentSeasonId)
+      .catch(error => console.error('Could not update public season fine total', error))
   }
 
   // Naive implementation, but it's enough

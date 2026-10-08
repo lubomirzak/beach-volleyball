@@ -3,5 +3,6 @@ export interface Fine {
   trainingId: string
   playerId: string
   amount: number
+  paid: boolean
   created: number
 }

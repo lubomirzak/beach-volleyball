@@ -6,7 +6,10 @@ import {
   addDoc,
   getDocs,
   DocumentData,
+  doc,
+  deleteDoc,
   query,
+  updateDoc,
   where,
 } from '@angular/fire/firestore'
 import { FineDetails } from 'src/interfaces/fineDetails'
@@ -47,18 +50,17 @@ export class FineService {
         const training = trainingsData.filter((p) => p.id == item['trainingId'])[0]
         result.push({
           id: item['id'],
-          playerName: `${player.firstName} ${player.lastName}`,
+          firestoreId: doc.id,
+          playerName: `${player.lastName.toLocaleUpperCase()} ${player.firstName}`,
           amount: item['amount'],
-          amountString: `${item['amount']} EUR`,
+          paid: item['paid'],
           created: item['created'],
           trainingId: item['trainingId'],
           playerId: item['playerId'],
           date: training.date,
         })
       })
-      return result.sort((a, b) =>
-        b.created.toString().localeCompare(a.created.toString())
-      )
+      return result.sort((a, b) => b.created - a.created)
     })
   }
 
@@ -71,6 +73,7 @@ export class FineService {
       id: this.generateGUID(),
       playerId: playerId,
       amount: amount,
+      paid: false,
       trainingId: trainingId,
       created: Date.now(),
     }
@@ -86,6 +89,20 @@ export class FineService {
       console.error('Error writing new fine to Firebase Database', error)
       return
     }
+  }
+
+  setPaid = async (firestoreId: string, paid: boolean): Promise<void> => {
+    await runInInjectionContext(this.injector, () =>
+      updateDoc(doc(this.firestore, SHARED_COLLECTIONS.fines, firestoreId), { paid })
+    )
+    this.cacheService.clear(`fines:${this.seasonStorage.currentSeasonId}`)
+  }
+
+  delete = async (firestoreId: string): Promise<void> => {
+    await runInInjectionContext(this.injector, () =>
+      deleteDoc(doc(this.firestore, SHARED_COLLECTIONS.fines, firestoreId))
+    )
+    this.cacheService.clear(`fines:${this.seasonStorage.currentSeasonId}`)
   }
 
   // Naive implementation, but it's enough

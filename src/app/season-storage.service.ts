@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core'
 import { HISTORY_SEASONS } from './history/seasons'
 
-export type SeasonEntity = 'matches' | 'trainings' | 'fines'
+export type SeasonEntity = 'matches' | 'trainings' | 'fines' | 'substitutePayments'
 
 export const SHARED_COLLECTIONS: Record<SeasonEntity, string> = {
   matches: 'seasonMatches',
   trainings: 'seasonTrainings',
   fines: 'seasonFines',
+  substitutePayments: 'seasonSubstitutePayments',
 }
 
 @Injectable({ providedIn: 'root' })

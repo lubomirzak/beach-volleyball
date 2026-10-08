@@ -50,6 +50,18 @@ function playerName(playersById: Map<string, Player>, id: string): string {
   return player ? `${player.firstName} ${player.lastName}` : `Unknown player (${id})`
 }
 
+function leaderboardPlayerName(playersById: Map<string, Player>, id: string): string {
+  const player = playersById.get(id)
+  return player ? `${player.lastName.toLocaleUpperCase()} ${player.firstName}` : `Unknown player (${id})`
+}
+
+function leaderboardPairName(playersById: Map<string, Player>, firstId: string, secondId: string): string {
+  return [firstId, secondId]
+    .map(id => leaderboardPlayerName(playersById, id))
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+    .join(', ')
+}
+
 export function buildTeams(matches: readonly Match[], players: readonly Player[]): Team[] {
   const playersById = new Map(players.map(player => [player.id, player] as const))
   const teams = new Map<string, Team>()
@@ -92,7 +104,7 @@ export function buildScoreboards(
   function addIndividual(id: string, pointsFor: number, pointsAgainst: number, won: boolean): void {
     const row = individuals.get(id) ?? {
       playerId: id,
-      name: playerName(playersById, id),
+      name: leaderboardPlayerName(playersById, id),
       wonSets: 0,
       lostSets: 0,
       wonPoints: 0,
@@ -117,7 +129,7 @@ export function buildScoreboards(
     const row = teams.get(key) ?? {
       player1Id,
       player2Id,
-      name: `${playerName(playersById, player1Id)}, ${playerName(playersById, player2Id)}`,
+      name: leaderboardPairName(playersById, player1Id, player2Id),
       wonSets: 0,
       lostSets: 0,
       wonPoints: 0,

@@ -3,6 +3,8 @@ import { toSignal } from '@angular/core/rxjs-interop'
 import { CommonModule } from '@angular/common'
 import { NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
+import { MatSortModule, Sort } from '@angular/material/sort'
+import { scoreboardSortValue, sortTableRows } from '../table-sort'
 import { MatAutocompleteModule } from '@angular/material/autocomplete'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -31,7 +33,7 @@ import { firstValueFrom } from 'rxjs'
 
 @Component({
   selector: 'app-training-detail',
-  imports: [
+  imports: [MatSortModule, 
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -67,24 +69,24 @@ import { firstValueFrom } from 'rxjs'
       <h3 style="padding-top: 30px">Results</h3>
 
       <div style="width: 30%; ">
-        <table mat-table [dataSource]="scoreboards$">
+        <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortScoreboard($event)" [dataSource]="scoreboards$">
           <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Player</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Player</th>
             <td mat-cell *matCellDef="let element">{{ element.name }}</td>
           </ng-container>
 
           <ng-container matColumnDef="sets">
-            <th mat-header-cell *matHeaderCellDef>Sets</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Sets</th>
             <td mat-cell *matCellDef="let element">{{ element.sets }}</td>
           </ng-container>
 
           <ng-container matColumnDef="points">
-            <th mat-header-cell *matHeaderCellDef>Points</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Points</th>
             <td mat-cell *matCellDef="let element">{{ element.points }}</td>
           </ng-container>
 
           <ng-container matColumnDef="ratio">
-            <th mat-header-cell *matHeaderCellDef>Ratio</th>
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Ratio</th>
             <td mat-cell *matCellDef="let element">{{ element.ratio }}</td>
           </ng-container>
 
@@ -95,9 +97,9 @@ import { firstValueFrom } from 'rxjs'
 
       <h3>Matches</h3>
       <div class="matches-table-scroll">
-      <table mat-table [dataSource]="matches$">
+      <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortMatches($event)" [dataSource]="matches$">
         <ng-container matColumnDef="team1">
-          <th mat-header-cell *matHeaderCellDef>Team 1</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Team 1</th>
           <td
             mat-cell
             *matCellDef="let element"
@@ -109,7 +111,7 @@ import { firstValueFrom } from 'rxjs'
         </ng-container>
 
         <ng-container matColumnDef="team2">
-          <th mat-header-cell *matHeaderCellDef>Team 2</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Team 2</th>
           <td
             mat-cell
             *matCellDef="let element"
@@ -121,7 +123,7 @@ import { firstValueFrom } from 'rxjs'
         </ng-container>
 
         <ng-container matColumnDef="score">
-          <th mat-header-cell *matHeaderCellDef>Score</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Score</th>
           <td mat-cell *matCellDef="let element">{{ element.score }}</td>
         </ng-container>
 
@@ -324,6 +326,27 @@ export class TrainingDetailComponent {
   private readonly dialog = inject(MatDialog)
   @ViewChild('confirmDeleteDialog') confirmDeleteDialog?: TemplateRef<unknown>
   trainingId: string
+  private scoreboardSort: Sort = { active: '', direction: '' }
+  private matchSort: Sort = { active: '', direction: '' }
+
+  sortScoreboard(sort: Sort): void {
+    this.scoreboardSort = sort
+    this.scoreboards$ = sortTableRows(this.scoreboards$, sort, scoreboardSortValue)
+  }
+
+  sortMatches(sort: Sort): void {
+    this.matchSort = sort
+    this.matches$ = sortTableRows(this.matches$, sort, this.matchSortValue)
+  }
+
+  private matchSortValue(row: TrainingDetailsMatch, column: string) {
+    switch (column) {
+      case 'team1': return row.team1
+      case 'team2': return row.team2
+      default: return [row.team1Points, row.team2Points]
+    }
+  }
+
   matches$: TrainingDetailsMatch[] = []
   scoreboards$: any[] = []
   playersData$: Player[] = []
@@ -484,8 +507,8 @@ export class TrainingDetailComponent {
         this.trainingService.getTrainingDetails(this.trainingId),
         this.trainingService.getTeams(),
       ])
-      this.matches$ = details.matches
-      this.scoreboards$ = details.scoreboards
+      this.matches$ = sortTableRows(details.matches, this.matchSort, this.matchSortValue)
+      this.scoreboards$ = sortTableRows(details.scoreboards, this.scoreboardSort, scoreboardSortValue)
       this.teamsData$ = teams
       this.snackBar.open('Match deleted', 'Close', { duration: 3000 })
     } catch (error) {
@@ -511,8 +534,8 @@ export class TrainingDetailComponent {
     })
 
     this.trainingService.getTrainingDetails(this.trainingId).then((data) => {
-      this.matches$ = data.matches
-      this.scoreboards$ = data.scoreboards
+      this.matches$ = sortTableRows(data.matches, this.matchSort, this.matchSortValue)
+      this.scoreboards$ = sortTableRows(data.scoreboards, this.scoreboardSort, scoreboardSortValue)
     })
 
     this.trainingService.getTeams().then((data) => {

@@ -65,6 +65,9 @@ import { AuthService } from './auth.service'
               <a mat-list-item [routerLink]="['/trainings']">Trainings</a>
               <a mat-list-item [routerLink]="['/players']">Players</a>
               <a mat-list-item [routerLink]="['/fines']">Fines</a>
+              @if (authService.isAdmin$ | async) {
+                <a mat-list-item [routerLink]="['/substitute-payments']">Substitute payments</a>
+              }
               <a mat-list-item [routerLink]="['/history']">History</a>
             </mat-nav-list>
           </mat-sidenav>

@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core'
 import { AsyncPipe, NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
+import { MatSortModule, Sort } from '@angular/material/sort'
+import { sortTableRows } from '../table-sort'
 import { MatInputModule } from '@angular/material/input'
 import { MatFormFieldModule } from '@angular/material/form-field'
 import { TrainingService } from '../training.service'
@@ -19,7 +21,7 @@ import { Match } from 'src/interfaces/match'
 
 @Component({
   selector: 'app-trainings',
-  imports: [
+  imports: [MatSortModule, 
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -39,9 +41,9 @@ import { Match } from 'src/interfaces/match'
     </div>
 
     <div *ngIf="!showSpinner">
-      <table mat-table [dataSource]="trainingsData$">
+      <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortTrainings($event)" [dataSource]="trainingsData$">
         <ng-container matColumnDef="date">
-          <th mat-header-cell *matHeaderCellDef>Date</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
           <td mat-cell *matCellDef="let element">
             <a
               [routerLink]="['/trainingdetail', element.id]"
@@ -52,12 +54,12 @@ import { Match } from 'src/interfaces/match'
         </ng-container>
 
         <ng-container matColumnDef="players">
-          <th mat-header-cell *matHeaderCellDef>Players</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Players</th>
           <td mat-cell *matCellDef="let element">{{ element.players }}</td>
         </ng-container>
 
         <ng-container matColumnDef="matchesPlayed">
-          <th mat-header-cell *matHeaderCellDef>Matches played</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches played</th>
           <td mat-cell *matCellDef="let element">{{ element.matchesPlayed }}</td>
         </ng-container>
 
@@ -91,6 +93,13 @@ import { Match } from 'src/interfaces/match'
 export class TrainingsComponent {
   readonly authService = inject(AuthService)
   trainingsData$: { id: string; date: Date; players: string; matchesPlayed: number }[] = []
+  private trainingSort: Sort = { active: '', direction: '' }
+
+  sortTrainings(sort: Sort): void {
+    this.trainingSort = sort
+    this.trainingsData$ = sortTableRows(this.trainingsData$, sort)
+  }
+
   columnNames: string[] = ['date', 'players', 'matchesPlayed']
   showSpinner: boolean = true
   applyForm = new FormGroup({
@@ -140,7 +149,7 @@ export class TrainingsComponent {
     }
     const lastNameById = new Map(players.map(player => [player.id, player.lastName] as const))
 
-    this.trainingsData$ = trainings.map(training => {
+    this.trainingsData$ = sortTableRows(trainings.map(training => {
       const trainingMatches = matchesByTraining.get(training.id) ?? []
       const playerIds = new Set(trainingMatches.flatMap(match => [
         match.team1Player1,
@@ -157,7 +166,7 @@ export class TrainingsComponent {
         players: lastNames.join(', ') || '—',
         matchesPlayed: trainingMatches.length,
       }
-    })
+    }), this.trainingSort)
     this.showSpinner = false
   }
 }

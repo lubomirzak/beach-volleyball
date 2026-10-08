@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core'
 import { AsyncPipe, NgIf } from '@angular/common'
 import { MatTableModule } from '@angular/material/table'
+import { MatSortModule, Sort } from '@angular/material/sort'
+import { sortTableRows } from '../table-sort'
 import { MatInputModule } from '@angular/material/input'
 import { MatAutocompleteModule } from '@angular/material/autocomplete'
 import { MatFormFieldModule } from '@angular/material/form-field'
@@ -27,7 +29,7 @@ interface PlayerRow {
 
 @Component({
   selector: 'app-players',
-  imports: [
+  imports: [MatSortModule, 
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -63,21 +65,21 @@ interface PlayerRow {
           }
         </mat-autocomplete>
       </mat-form-field>
-      <table mat-table [dataSource]="playersData$">
+      <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortPlayers($event)" [dataSource]="playersData$">
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
           <td mat-cell *matCellDef="let element" class="name-cell">
             <a class="player-link" [routerLink]="['/players', element.id]">{{ element.name }}</a>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="matchesThisSeason">
-          <th mat-header-cell *matHeaderCellDef>Matches this season</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches this season</th>
           <td mat-cell *matCellDef="let element">{{ element.matchesThisSeason }}</td>
         </ng-container>
 
         <ng-container matColumnDef="totalMatches">
-          <th mat-header-cell *matHeaderCellDef>Total matches</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Total matches</th>
           <td mat-cell *matCellDef="let element">{{ element.totalMatches }}</td>
         </ng-container>
 
@@ -157,6 +159,12 @@ export class PlayersComponent {
   readonly authService = inject(AuthService)
   readonly nameFilter = new FormControl('', { nonNullable: true })
   private allPlayersData: PlayerRow[] = []
+  private playerSort: Sort = { active: '', direction: '' }
+
+  sortPlayers(sort: Sort): void {
+    this.playerSort = sort
+    this.applyNameFilter()
+  }
   playersData$: PlayerRow[] = []
   suggestedPlayers: PlayerRow[] = []
   columnNames: string[] = ['name', 'matchesThisSeason', 'totalMatches']
@@ -178,10 +186,11 @@ export class PlayersComponent {
   private applyNameFilter(): void {
     const query = this.nameFilter.value
     const hasQuery = normalizeName(query).trim().length > 0
-    this.playersData$ = hasQuery
+    const filtered = hasQuery
       ? this.allPlayersData.filter(player => nameMatchesQuery(player.name, query))
       : this.allPlayersData
-    this.suggestedPlayers = hasQuery ? this.playersData$.slice(0, 8) : []
+    this.playersData$ = sortTableRows(filtered, this.playerSort)
+    this.suggestedPlayers = hasQuery ? filtered.slice(0, 8) : []
   }
 
   submitNewPlayer = async () => {

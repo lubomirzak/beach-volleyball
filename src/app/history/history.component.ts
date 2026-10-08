@@ -1,16 +1,18 @@
 import { Component } from '@angular/core'
 import { MatTableModule } from '@angular/material/table'
+import { MatSortModule, Sort } from '@angular/material/sort'
+import { sortTableRows } from '../table-sort'
 import { RouterModule } from '@angular/router'
 import { HISTORY_SEASONS } from './seasons'
 
 @Component({
   selector: 'app-history',
-  imports: [MatTableModule, RouterModule],
+  imports: [MatSortModule, MatTableModule, RouterModule],
   template: `
     <h1>History</h1>
-    <table mat-table [dataSource]="seasons">
+    <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortSeasons($event)" [dataSource]="seasons">
       <ng-container matColumnDef="season">
-        <th mat-header-cell *matHeaderCellDef>Season</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Season</th>
         <td mat-cell *matCellDef="let season" style="padding: 0">
           <a class="season-link" [routerLink]="['/history', season.slug]">
             {{ season.label }}{{ season.current ? ' (current)' : '' }}
@@ -37,6 +39,11 @@ import { HISTORY_SEASONS } from './seasons'
   `,
 })
 export class HistoryComponent {
-  readonly seasons = HISTORY_SEASONS
+  seasons = [...HISTORY_SEASONS]
+
+  sortSeasons(sort: Sort): void {
+    this.seasons = sortTableRows(this.seasons, sort, season =>
+      -HISTORY_SEASONS.findIndex(item => item.slug === season.slug))
+  }
   readonly columnNames = ['season']
 }

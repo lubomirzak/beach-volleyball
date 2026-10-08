@@ -21,7 +21,32 @@ service cloud.firestore {
     match /seasonFines/{document} {
       allow read: if isAdmin() || resource.data.seasonId == 'winter-2026';
       allow create: if isAdmin()
-        && request.resource.data.seasonId == 'winter-2026';
+        && request.resource.data.seasonId == 'winter-2026'
+        && request.resource.data.paid == false;
+      allow update: if isAdmin()
+        && resource.data.seasonId == 'winter-2026'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paid'])
+        && request.resource.data.paid is bool;
+      allow delete: if isAdmin() && resource.data.seasonId == 'winter-2026';
+    }
+
+    match /seasonSubstitutePayments/{document} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasAll(['playerId', 'trainingId', 'seasonId', 'amount', 'paid', 'created'])
+        && request.resource.data.keys().hasOnly(['playerId', 'trainingId', 'seasonId', 'amount', 'paid', 'created'])
+        && request.resource.data.playerId is string
+        && request.resource.data.trainingId is string
+        && request.resource.data.seasonId == 'winter-2026'
+        && request.resource.data.amount is number
+        && request.resource.data.amount > 0
+        && request.resource.data.paid == false
+        && request.resource.data.created is int;
+      allow update: if isAdmin()
+        && resource.data.seasonId == 'winter-2026'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paid'])
+        && request.resource.data.paid is bool;
+      allow delete: if isAdmin() && resource.data.seasonId == 'winter-2026';
     }
 
     match /players/{document} {

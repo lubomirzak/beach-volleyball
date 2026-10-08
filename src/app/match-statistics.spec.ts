@@ -55,11 +55,13 @@ describe('match statistics', () => {
     const [individuals, pairs] = buildScoreboards(matches, players)
     expect(pairs.length).toBe(2)
     const ab = pairs.find(team => team.player1Id === 'a' && team.player2Id === 'b')
+    expect(ab?.name).toBe('ADAMS Alice, BROWN Bob')
     expect(ab?.sets).toBe('2:1')
     expect(ab?.points).toBe('56:51')
     expect(ab?.ratio).toBe('0.67')
 
     const alice = individuals.find(player => player.playerId === 'a')
+    expect(alice?.name).toBe('ADAMS Alice')
     expect(alice?.sets).toBe('2:1')
     expect(alice?.points).toBe('56:51')
     expect(alice?.ratio).toBe('0.67')
@@ -68,6 +70,17 @@ describe('match statistics', () => {
     expect(cd?.sets).toBe('1:2')
     expect(cd?.points).toBe('51:56')
     expect(cd?.ratio).toBe('0.33')
+  })
+
+  it('displays pair members in last-name order without changing their IDs or results', () => {
+    const renamedPlayers = players.map(player =>
+      player.id === 'a' ? { ...player, lastName: 'Zimmer' }
+        : player.id === 'b' ? { ...player, lastName: 'Adams' } : player
+    )
+    const [, pairs] = buildScoreboards(matches, renamedPlayers)
+    const pair = pairs.find(team => team.player1Id === 'a' && team.player2Id === 'b')
+    expect(pair?.name).toBe('ADAMS Bob, ZIMMER Alice')
+    expect(pair?.sets).toBe('2:1')
   })
 
   it('excludes undecided or invalid scores from ratios', () => {

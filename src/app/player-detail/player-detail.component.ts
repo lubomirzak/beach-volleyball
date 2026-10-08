@@ -5,6 +5,8 @@ import { MatIconModule } from '@angular/material/icon'
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'
 import { MatSelectModule } from '@angular/material/select'
 import { MatTableModule } from '@angular/material/table'
+import { MatSortModule, Sort } from '@angular/material/sort'
+import { sortTableRows, TableSortValue } from '../table-sort'
 import { ActivatedRoute, RouterModule } from '@angular/router'
 import { ChartData, ChartOptions } from 'chart.js'
 import { BaseChartDirective } from 'ng2-charts'
@@ -34,6 +36,7 @@ interface PartnerRatio {
 interface PartnerSeason {
   label: string
   rows: PartnerRatio[]
+  sort: Sort
 }
 
 interface MatchTotals {
@@ -69,7 +72,7 @@ type ChartMode = 'running' | 'training'
 
 @Component({
   selector: 'app-player-detail',
-  imports: [BaseChartDirective, MatButtonModule, MatFormFieldModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule, MatTableModule, RouterModule],
+  imports: [MatSortModule, BaseChartDirective, MatButtonModule, MatFormFieldModule, MatIconModule, MatProgressSpinnerModule, MatSelectModule, MatTableModule, RouterModule],
   template: `
     <header class="page-heading">
       <h1>{{ playerName || 'Player details' }}</h1>
@@ -89,21 +92,21 @@ type ChartMode = 'running' | 'training'
       <section class="table-section">
         <h2>By season</h2>
         <div class="table-scroll">
-          <table mat-table [dataSource]="seasonRows">
+          <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortSeasons($event)" [dataSource]="seasonRows">
             <ng-container matColumnDef="season">
-              <th mat-header-cell *matHeaderCellDef>Season</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Season</th>
               <td mat-cell *matCellDef="let row">{{ row.season }}</td>
             </ng-container>
             <ng-container matColumnDef="matches">
-              <th mat-header-cell *matHeaderCellDef>Matches played</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches played</th>
               <td mat-cell *matCellDef="let row">{{ row.matches }}</td>
             </ng-container>
             <ng-container matColumnDef="wins">
-              <th mat-header-cell *matHeaderCellDef>Wins</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Wins</th>
               <td mat-cell *matCellDef="let row">{{ row.wins }}</td>
             </ng-container>
             <ng-container matColumnDef="ratio">
-              <th mat-header-cell *matHeaderCellDef>Ratio</th>
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Ratio</th>
               <td mat-cell *matCellDef="let row">{{ row.ratio }}</td>
             </ng-container>
             <tr mat-header-row *matHeaderRowDef="seasonColumns"></tr>
@@ -163,21 +166,21 @@ type ChartMode = 'running' | 'training'
               <p>No partner matches this season.</p>
             } @else {
               <div class="table-scroll partner-table-scroll">
-                <table mat-table class="partner-table" [dataSource]="season.rows">
+                <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortPartners(season, $event)" class="partner-table" [dataSource]="season.rows">
                   <ng-container matColumnDef="partner">
-                    <th mat-header-cell *matHeaderCellDef>Partner</th>
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Partner</th>
                     <td mat-cell *matCellDef="let row">{{ row.partner }}</td>
                   </ng-container>
                   <ng-container matColumnDef="matches">
-                    <th mat-header-cell *matHeaderCellDef>Matches played</th>
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Matches played</th>
                     <td mat-cell *matCellDef="let row">{{ row.matches }}</td>
                   </ng-container>
                   <ng-container matColumnDef="wins">
-                    <th mat-header-cell *matHeaderCellDef>Wins</th>
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Wins</th>
                     <td mat-cell *matCellDef="let row">{{ row.wins }}</td>
                   </ng-container>
                   <ng-container matColumnDef="ratio">
-                    <th mat-header-cell *matHeaderCellDef>Ratio</th>
+                    <th mat-header-cell *matHeaderCellDef mat-sort-header>Ratio</th>
                     <td mat-cell *matCellDef="let row">{{ row.ratio }}</td>
                   </ng-container>
                   <tr mat-header-row *matHeaderRowDef="partnerColumns"></tr>
@@ -393,6 +396,31 @@ export class PlayerDetailComponent {
       },
     },
   }
+  private seasonSort: Sort = { active: '', direction: '' }
+
+  sortSeasons(sort: Sort): void {
+    this.seasonSort = sort
+    this.seasonRows = sortTableRows(this.seasonRows, sort, (row, column) =>
+      column === 'season' ? this.seasonOrder(row.season) : this.ratioRowValue(row, column))
+  }
+
+  sortPartners(season: PartnerSeason, sort: Sort): void {
+    season.sort = sort
+    season.rows = sortTableRows(season.rows, sort, (row, column) =>
+      this.ratioRowValue(row, column))
+  }
+
+  private seasonOrder(label: string): number {
+    return -HISTORY_SEASONS.findIndex(season => season.label === label)
+  }
+
+  private ratioRowValue(row: SeasonRatio | PartnerRatio, column: string): TableSortValue {
+    if (column === 'ratio') return row.matches ? row.wins / row.matches : 0
+    if (column === 'matches') return row.matches
+    if (column === 'wins') return row.wins
+    return 'partner' in row ? row.partner : row.season
+  }
+
   readonly seasonColumns = ['season', 'matches', 'wins', 'ratio']
   readonly partnerColumns = ['partner', 'matches', 'wins', 'ratio']
 
@@ -471,7 +499,7 @@ export class PlayerDetailComponent {
         rows.sort((a, b) =>
           b.wins / b.matches - a.wins / a.matches || a.partner.localeCompare(b.partner)
         )
-        partnerSeasons.push({ label: season.label, rows })
+        partnerSeasons.push({ label: season.label, rows, sort: { active: '', direction: '' } })
         seasonTrends.push({
           slug: season.slug,
           label: season.label,
@@ -479,7 +507,8 @@ export class PlayerDetailComponent {
         })
       })
 
-      this.seasonRows = seasonRows
+      this.seasonRows = sortTableRows(seasonRows, this.seasonSort, (row, column) =>
+        column === 'season' ? this.seasonOrder(row.season) : this.ratioRowValue(row, column))
       this.partnerSeasons = partnerSeasons
       this.seasonTrends = seasonTrends
       this.selectChartSeason(seasonTrends.find(season => season.points.length > 0)?.slug ?? seasonTrends[0]?.slug ?? '')

@@ -6,6 +6,7 @@ import { TrainingsComponent } from './trainings/trainings.component'
 import { TrainingDetailComponent } from './training-detail/training-detail.component'
 import { FinesComponent } from './fines/fines.component'
 import { HistoryComponent } from './history/history.component'
+import { SubstitutePaymentsComponent } from './substitute-payments/substitute-payments.component'
 
 const routeConfig: Routes = [
   {
@@ -37,6 +38,11 @@ const routeConfig: Routes = [
     path: 'history',
     component: HistoryComponent,
     title: 'History',
+  },
+  {
+    path: 'substitute-payments',
+    component: SubstitutePaymentsComponent,
+    title: 'Substitute payments',
   },
   {
     path: 'history/:season',

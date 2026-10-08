@@ -30,4 +30,15 @@ describe('table sorting', () => {
     expect(sortTableRows(rows, { active: 'points', direction: 'asc' }, scoreboardSortValue)[0].name)
       .toBe('A')
   })
+
+  it('uses point difference to break ratio ties when sorting a leaderboard', () => {
+    const rows = [
+      { name: 'A', wonSets: 2, lostSets: 1, wonPoints: 60, lostPoints: 55 },
+      { name: 'B', wonSets: 4, lostSets: 2, wonPoints: 80, lostPoints: 71 },
+    ]
+    expect(sortTableRows(rows, { active: 'ratio', direction: 'desc' }, scoreboardSortValue)
+      .map(row => row.name)).toEqual(['B', 'A'])
+    expect(sortTableRows(rows, { active: 'ratio', direction: 'asc' }, scoreboardSortValue)
+      .map(row => row.name)).toEqual(['A', 'B'])
+  })
 })

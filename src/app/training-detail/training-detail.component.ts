@@ -230,6 +230,8 @@ import { firstValueFrom } from 'rxjs'
                 matInput
                 type="number"
                 placeholder="Score 1"
+                min="0"
+                step="1"
                 formControlName="team1Points"
               />
             </mat-form-field>
@@ -241,6 +243,8 @@ import { firstValueFrom } from 'rxjs'
                 matInput
                 type="number"
                 placeholder="Score 2"
+                min="0"
+                step="1"
                 formControlName="team2Points"
               />
             </mat-form-field>
@@ -377,8 +381,8 @@ export class TrainingDetailComponent {
   readonly team2 = new FormControl('')
   readonly team2Player1 = new FormControl('')
   readonly team2Player2 = new FormControl('')
-  readonly team1Points = new FormControl('21')
-  readonly team2Points = new FormControl('')
+  readonly team1Points = new FormControl<number | null>(21)
+  readonly team2Points = new FormControl<number | null>(null)
 
   readonly options = inject(FormBuilder).group({
     team1Player1: this.team1Player1,
@@ -447,11 +451,11 @@ export class TrainingDetailComponent {
       return
     }
 
-    const team1ScoreText = this.team1Points.value?.trim() ?? ''
-    const team2ScoreText = this.team2Points.value?.trim() ?? ''
-    const team1Score = Number(team1ScoreText)
-    const team2Score = Number(team2ScoreText)
-    if (!/^\d+$/.test(team1ScoreText) || !/^\d+$/.test(team2ScoreText)
+    const team1Score = this.team1Points.value
+    const team2Score = this.team2Points.value
+    if (team1Score === null || team2Score === null
+      || !Number.isInteger(team1Score) || !Number.isInteger(team2Score)
+      || team1Score < 0 || team2Score < 0
       || team1Score === team2Score) {
       this.snackBar.open('Enter two different, non-negative whole-number scores.', 'Close', { duration: 4000 })
       return
@@ -469,7 +473,7 @@ export class TrainingDetailComponent {
     if (res) {
       this.options.reset()
       this.reloadData()
-      this.team1Points.setValue('21', {
+      this.team1Points.setValue(21, {
         emitEvent: false,
       })
       this.snackBar.open('Match was created', 'Close', {

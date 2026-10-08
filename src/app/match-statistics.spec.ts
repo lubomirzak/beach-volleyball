@@ -1,7 +1,7 @@
 import type { Match } from '../interfaces/match'
 import type { Player } from '../interfaces/player'
 import {
-  buildScoreboards, buildTeams, canonicalTeamIds, didPlayerWin,
+  buildScoreboards, buildTeams, canonicalTeamIds, compareLeaderboardRows, didPlayerWin,
   isDecidedMatch, partnerIdForMatch, winRatio,
 } from './match-statistics'
 
@@ -93,5 +93,15 @@ describe('match statistics', () => {
     expect(buildScoreboards([tied, negative], players)).toEqual([[], []])
     expect(winRatio(2, 1)).toBe(2 / 3)
     expect(winRatio(0, 0)).toBe(0)
+  })
+
+  it('uses point difference and then points scored for equal leaderboard ratios', () => {
+    const rows = [
+      { name: 'Adams', wonSets: 2, lostSets: 1, wonPoints: 50, lostPoints: 45 },
+      { name: 'Brown', wonSets: 4, lostSets: 2, wonPoints: 90, lostPoints: 82 },
+      { name: 'Clark', wonSets: 2, lostSets: 1, wonPoints: 70, lostPoints: 62 },
+    ]
+    expect(rows.sort(compareLeaderboardRows).map(row => row.name))
+      .toEqual(['Brown', 'Clark', 'Adams'])
   })
 })

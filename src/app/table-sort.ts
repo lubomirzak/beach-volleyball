@@ -1,4 +1,5 @@
 import { Sort } from '@angular/material/sort'
+import { leaderboardRank } from './match-statistics'
 
 export type TableSortValue = string | number | Date | readonly (string | number)[] | null | undefined
 
@@ -43,8 +44,7 @@ export function scoreboardSortValue(row: ScoreboardRow, column: string): TableSo
   switch (column) {
     case 'sets': return [row.wonSets, row.lostSets]
     case 'points': return [row.wonPoints, row.lostPoints]
-    case 'ratio': return row.wonSets + row.lostSets
-      ? row.wonSets / (row.wonSets + row.lostSets) : 0
+    case 'ratio': return leaderboardRank(row)
     default: return row.name
   }
 }

@@ -17,7 +17,7 @@ import { TrainingDetailsMatch } from 'src/interfaces/trainingDetailsMatch'
 import { TrainingDetailsScoreboard } from 'src/interfaces/trainingDetailsScoreboard'
 import { TrainingDetailsScoreboardTeam } from 'src/interfaces/trainingDetailsScoreboardTeam'
 import { Team } from 'src/interfaces/team'
-import { buildScoreboards, buildTeams, winRatio } from './match-statistics'
+import { buildScoreboards, buildTeams, compareLeaderboardRows } from './match-statistics'
 import { CacheService } from './cache.service'
 import { SHARED_COLLECTIONS, SeasonStorageService } from './season-storage.service'
 
@@ -130,12 +130,8 @@ export class TrainingService {
     }
 
     return [
-      trainingDetailScoreboards.sort(
-        (a, b) => winRatio(b.wonSets, b.lostSets) - winRatio(a.wonSets, a.lostSets)
-      ),
-      trainingDetailScoreboardsTeams.sort(
-        (a, b) => winRatio(b.wonSets, b.lostSets) - winRatio(a.wonSets, a.lostSets)
-      ),
+      trainingDetailScoreboards.sort(compareLeaderboardRows),
+      trainingDetailScoreboardsTeams.sort(compareLeaderboardRows),
     ]
   }
 

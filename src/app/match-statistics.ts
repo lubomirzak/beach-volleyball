@@ -18,6 +18,23 @@ export function winRatio(wins: number, losses: number): number {
   return matches === 0 ? 0 : wins / matches
 }
 
+type LeaderboardRow = Pick<TrainingDetailsScoreboard,
+  'name' | 'wonSets' | 'lostSets' | 'wonPoints' | 'lostPoints'>
+
+// Break equal win ratios by point difference, then by points scored.
+export function leaderboardRank(row: LeaderboardRow): readonly [number, number, number] {
+  return [winRatio(row.wonSets, row.lostSets), row.wonPoints - row.lostPoints, row.wonPoints]
+}
+
+export function compareLeaderboardRows(left: LeaderboardRow, right: LeaderboardRow): number {
+  const leftRank = leaderboardRank(left)
+  const rightRank = leaderboardRank(right)
+  return rightRank[0] - leftRank[0]
+    || rightRank[1] - leftRank[1]
+    || rightRank[2] - leftRank[2]
+    || left.name.localeCompare(right.name, undefined, { sensitivity: 'base' })
+}
+
 export function isDecidedMatch(match: Match): boolean {
   return Number.isInteger(match.team1Points)
     && Number.isInteger(match.team2Points)

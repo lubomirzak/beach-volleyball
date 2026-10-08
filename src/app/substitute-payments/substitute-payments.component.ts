@@ -237,6 +237,9 @@ export class SubstitutePaymentsComponent {
       this.rows = sortTableRows(rows, this.sort, this.sortValue)
       this.players = players
       this.trainings = trainings
+      if (!trainings.some(training => training.id === this.form.controls.trainingId.value)) {
+        this.form.controls.trainingId.setValue(trainings[0]?.id ?? '')
+      }
     } catch (error) {
       console.error('Could not load substitute payments', error)
       this.error = 'Could not load substitute payments.'

@@ -249,6 +249,9 @@ export class FinesComponent {
       this.finesData$ = sortTableRows(fines, this.fineSort, this.fineSortValue)
       this.playersData$ = players
       this.trainingsData$ = trainings
+      if (!trainings.some(training => training.id === this.form.controls.trainingId.value)) {
+        this.form.controls.trainingId.setValue(trainings[0]?.id ?? '')
+      }
     } catch (error) {
       console.error('Could not load fines', error)
       this.error = 'Could not load fines.'

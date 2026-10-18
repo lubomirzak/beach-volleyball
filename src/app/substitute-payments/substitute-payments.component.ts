@@ -58,6 +58,7 @@ import { TrainingService } from '../training.service'
       <p role="alert">{{ error }}</p>
       <button mat-stroked-button type="button" (click)="reloadData()">Try again</button>
     } @else {
+      <div class="payment-results">
       <div class="table-scroll">
         <table mat-table matSort [matSortActive]="sort.active" [matSortDirection]="sort.direction"
           [matSortDisableClear]="true" (matSortChange)="sortPayments($event)"
@@ -107,9 +108,46 @@ import { TrainingService } from '../training.service'
           }
         </table>
       </div>
+      <div class="payment-cards" role="list" aria-label="Substitute payments">
+        @for (row of rows; track row.firestoreId) {
+          <article class="payment-card" role="listitem">
+            <div class="payment-card-top">
+              <div>
+                <h2>{{ row.playerName }}</h2>
+                <span>{{ row.trainingDate?.toDateString() || 'Unknown training' }}</span>
+              </div>
+              <button mat-icon-button class="delete-button" type="button"
+                [attr.aria-label]="'Delete payment for ' + row.playerName"
+                [disabled]="deletingPaymentId !== null || savingPaymentId !== null"
+                (click)="confirmDelete(row)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="payment-card-details">
+              <div class="payment-field">
+                <span class="payment-label">Amount</span>
+                <strong>{{ row.amount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+              </div>
+              <div class="payment-field">
+                <span class="payment-label">Paid</span>
+                <mat-slide-toggle [checked]="row.paid" [disabled]="savingPaymentId !== null || deletingPaymentId !== null"
+                  [attr.aria-label]="'Paid by ' + row.playerName"
+                  (change)="togglePaid(row, $event)">{{ row.paid ? 'Yes' : 'No' }}</mat-slide-toggle>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+      @if (rows.length > 0) {
+        <div class="mobile-total">
+          <span>Total</span>
+          <strong>{{ totalAmount | currency:'EUR':'symbol':'1.2-2' }}</strong>
+        </div>
+      }
       @if (rows.length === 0) {
         <p>No substitute payments recorded this season.</p>
       }
+      </div>
 
       <section class="new-payment">
         <h2>Add substitute payment</h2>
@@ -157,8 +195,10 @@ import { TrainingService } from '../training.service'
     </ng-template>
   `,
   styles: `
+    .payment-results { container-type: inline-size; }
     .table-scroll { overflow-x: auto; }
     table { width: 100%; min-width: 620px; }
+    .payment-cards, .mobile-total { display: none; }
     .mat-mdc-footer-row { font-weight: 700; background: var(--mat-sys-surface-container); }
     .mat-mdc-footer-cell { border-top: 2px solid var(--mat-sys-outline-variant); }
     .new-payment { margin-top: 48px; }
@@ -169,6 +209,42 @@ import { TrainingService } from '../training.service'
     .confirm-delete-button.mat-mdc-unelevated-button {
       background: var(--mat-sys-error);
       color: var(--mat-sys-on-error);
+    }
+    @container (max-width: 800px) {
+      .table-scroll { display: none; }
+      .payment-cards {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+      }
+      .payment-card {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--mat-sys-outline-variant);
+        border-radius: 12px;
+        background: var(--mat-sys-surface-container-low);
+      }
+      .payment-card-top, .payment-card-details {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .payment-card-top h2 {
+        margin: 0 0 4px;
+        font-size: 1.1rem;
+        overflow-wrap: anywhere;
+      }
+      .payment-card-details { align-items: end; flex-wrap: wrap; margin-top: 16px; }
+      .payment-field { display: flex; flex-direction: column; gap: 4px; }
+      .payment-label { color: var(--mat-sys-on-surface-variant); font-size: 0.8rem; }
+      .mobile-total {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px;
+        border-top: 2px solid var(--mat-sys-outline-variant);
+        font-weight: 700;
+      }
     }
   `,
 })

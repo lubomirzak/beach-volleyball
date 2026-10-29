@@ -72,11 +72,13 @@ function leaderboardPlayerName(playersById: Map<string, Player>, id: string): st
   return player ? `${player.lastName.toLocaleUpperCase()} ${player.firstName}` : `Unknown player (${id})`
 }
 
-function leaderboardPairName(playersById: Map<string, Player>, firstId: string, secondId: string): string {
-  return [firstId, secondId]
-    .map(id => leaderboardPlayerName(playersById, id))
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-    .join(', ')
+function leaderboardPairMembers(
+  playersById: Map<string, Player>, firstId: string, secondId: string
+): TrainingDetailsScoreboardTeam['members'] {
+  const first = { id: firstId, name: leaderboardPlayerName(playersById, firstId) }
+  const second = { id: secondId, name: leaderboardPlayerName(playersById, secondId) }
+  return first.name.localeCompare(second.name, undefined, { sensitivity: 'base' }) <= 0
+    ? [first, second] : [second, first]
 }
 
 export function buildTeams(matches: readonly Match[], players: readonly Player[]): Team[] {
@@ -143,10 +145,12 @@ export function buildScoreboards(
   function addTeam(firstId: string, secondId: string, pointsFor: number, pointsAgainst: number, won: boolean): void {
     const [player1Id, player2Id] = canonicalTeamIds(firstId, secondId)
     const key = teamKey(player1Id, player2Id)
+    const members = leaderboardPairMembers(playersById, player1Id, player2Id)
     const row = teams.get(key) ?? {
       player1Id,
       player2Id,
-      name: leaderboardPairName(playersById, player1Id, player2Id),
+      members,
+      name: `${members[0].name}, ${members[1].name}`,
       wonSets: 0,
       lostSets: 0,
       wonPoints: 0,

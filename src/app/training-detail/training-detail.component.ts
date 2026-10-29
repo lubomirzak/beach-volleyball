@@ -72,7 +72,9 @@ import { firstValueFrom } from 'rxjs'
         <table mat-table matSort [matSortDisableClear]="true" (matSortChange)="sortScoreboard($event)" [dataSource]="scoreboards$">
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Player</th>
-            <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+            <td mat-cell *matCellDef="let element">
+              <a class="player-link" [routerLink]="['/players', element.playerId]">{{ element.name }}</a>
+            </td>
           </ng-container>
 
           <ng-container matColumnDef="sets">
@@ -288,6 +290,15 @@ import { firstValueFrom } from 'rxjs'
       color: var(--mat-sys-primary);
       border-color: var(--mat-sys-primary);
       background-color: var(--mat-sys-primary-container);
+    }
+
+    .player-link {
+      color: var(--mat-sys-primary);
+      text-decoration: none;
+    }
+
+    .player-link:hover, .player-link:focus-visible {
+      text-decoration: underline;
     }
 
     .matches-table-scroll {

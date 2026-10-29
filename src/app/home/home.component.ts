@@ -53,7 +53,9 @@ import { toSignal } from '@angular/core/rxjs-interop'
           [matSortDisableClear]="true" (matSortChange)="sortPlayers($event)" [dataSource]="scoreboards$">
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Player</th>
-            <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+            <td mat-cell *matCellDef="let element">
+              <a class="player-link" [routerLink]="['/players', element.playerId]">{{ element.name }}</a>
+            </td>
           </ng-container>
 
           <ng-container matColumnDef="sets">
@@ -81,7 +83,10 @@ import { toSignal } from '@angular/core/rxjs-interop'
           [matSortDisableClear]="true" (matSortChange)="sortTeams($event)" [dataSource]="scoreboardsTeams$">
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Team</th>
-            <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+            <td mat-cell *matCellDef="let element">
+              <a class="player-link" [routerLink]="['/players', element.members[0].id]">{{ element.members[0].name }}</a>,
+              <a class="player-link" [routerLink]="['/players', element.members[1].id]">{{ element.members[1].name }}</a>
+            </td>
           </ng-container>
 
           <ng-container matColumnDef="sets">

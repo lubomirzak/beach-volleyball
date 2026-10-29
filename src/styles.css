@@ -1,0 +1,6 @@
+/* Leave room to scroll form actions above the on-screen keyboard. */
+@media (max-width: 800px), (hover: none) and (pointer: coarse) {
+  .main-content form {
+    padding-block-end: calc(clamp(16rem, 45svh, 26rem) + env(safe-area-inset-bottom, 0px));
+  }
+}

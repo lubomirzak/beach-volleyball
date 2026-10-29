@@ -171,7 +171,7 @@ type ChartMode = 'running' | 'training'
 
       <section class="table-section" aria-labelledby="matchups-title">
         <h2 id="matchups-title">Matchups</h2>
-        <p class="chart-note">Up to 3 highest and lowest win ratios. All seasons requires 5 matches; each season requires 3.</p>
+        <p class="chart-note">Up to 3 highest and lowest win ratios. Minimum matches against each player or pair: current season 1; past seasons 3; all seasons 5.</p>
         @for (period of matchupPeriods; track period.label) {
           <div class="matchup-period">
             <h3>{{ period.label }}</h3>
@@ -563,7 +563,7 @@ export class PlayerDetailComponent {
           b.wins / b.matches - a.wins / a.matches || a.partner.localeCompare(b.partner)
         )
         matchupPeriods.push({
-          ...this.opponentPeriod(season.label, matchesBySeason[index], playerId),
+          ...this.opponentPeriod(season.label, matchesBySeason[index], playerId, season.current ? 1 : 3),
           rows, sort: { active: '', direction: '' }, showPartners: true,
         })
         seasonTrends.push({
@@ -595,7 +595,7 @@ export class PlayerDetailComponent {
     this.updateChartData()
   }
 
-  private opponentPeriod(label: string, matches: Match[], playerId: string, minimumMatches = 3): OpponentPeriod {
+  private opponentPeriod(label: string, matches: Match[], playerId: string, minimumMatches: number): OpponentPeriod {
     const cards = this.opponentCards(rankOpponents(matches, playerId, minimumMatches), minimumMatches)
     return { label, cards, minimumMatches, hasRecords: cards.some(card => card.records.length > 0) }
   }

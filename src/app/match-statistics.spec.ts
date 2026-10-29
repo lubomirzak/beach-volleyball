@@ -80,6 +80,10 @@ describe('match statistics', () => {
     const [, pairs] = buildScoreboards(matches, renamedPlayers)
     const pair = pairs.find(team => team.player1Id === 'a' && team.player2Id === 'b')
     expect(pair?.name).toBe('ADAMS Bob, ZIMMER Alice')
+    expect(pair?.members).toEqual([
+      { id: 'b', name: 'ADAMS Bob' },
+      { id: 'a', name: 'ZIMMER Alice' },
+    ])
     expect(pair?.sets).toBe('2:1')
   })
 

@@ -116,3 +116,12 @@ button {
   font-size: 1.5rem;
   line-height: 1.2;
 }
+
+.player-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+}
+
+.player-link:hover, .player-link:focus-visible {
+  text-decoration: underline;
+}
